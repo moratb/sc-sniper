@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS calls (
     date TEXT,
     address TEXT,
     expected_launch_time TEXT,
+    expected_launch_time_ts TEXT,
     s_mm2 BOOL,
     s_ma2 BOOL,
     s_fa2 BOOL,
