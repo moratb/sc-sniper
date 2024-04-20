@@ -2,3 +2,4 @@
 /dbs/calls.db
 /dbs/jobs.sqlite
 /utils/__pycache__
+.vscode
