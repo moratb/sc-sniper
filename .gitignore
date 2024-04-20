@@ -1,0 +1,3 @@
+.env
+/dbs/calls.db
+/utils/__pycache__
