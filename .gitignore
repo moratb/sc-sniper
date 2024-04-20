@@ -1,3 +1,4 @@
 .env
 /dbs/calls.db
+/dbs/jobs.sqlite
 /utils/__pycache__

@@ -1,6 +1,7 @@
 import functools
 import traceback
 import sqlite3
+import time as t
 
 
 class SQLiteDB:
@@ -11,14 +12,9 @@ class SQLiteDB:
     def __enter__(self):
         self.conn = sqlite3.connect(self.database)
         return self.conn
-    
-    def execute(self, query):
-        cursor = self.conn.cursor()
-        cursor.execute(query)
-        self.conn.commit()
-        cursor.close()
 
     def __exit__(self, exc_type, exc_val, exc_tb):
+        self.conn.commit()
         self.conn.close()
 
 
