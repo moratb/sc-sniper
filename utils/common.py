@@ -63,7 +63,7 @@ def get_price_data(token, time_from, time_to):
 
 
 @retry(max_attempts=30, retry_delay=2)
-def get_quote(cur_in, cur_out, inamount ):
+def get_quote(cur_in, cur_out, inamount):
     url = 'https://quote-api.jup.ag/v6/quote'
     json_data = {
         'amount': int(inamount*10**6),
@@ -78,6 +78,6 @@ def core_task(token, launch_time):
     data = get_price_data(token, int(launch_time.timestamp()), int((launch_time + dt.timedelta(minutes=20)).timestamp()))
     data_example = data['c'].sum()
     decision = np.random.choice(a=2, size=1,p=[0.9,0.1])
-    tx_example = get_quote('EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v', token, 1000)
+    tx_example = get_quote('So11111111111111111111111111111111111111112', token, 1000)
     print("Task executed. Result: ", data_example, 'DECISION: ',decision)
     print('QUOTE: ', tx_example.json())
