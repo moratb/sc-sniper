@@ -39,6 +39,10 @@ def getTokenAccountBalance(token):
     return solana_client.get_token_account_balance(token).value.ui_amount 
 
 
+## first GET PRICES FROM CURRENT TOKENS IN THE WALLET via - https://public-api.birdeye.so/defi/multi_price and compare with buy prices.
+## If any are price = 2x, or price <=0.9x THEN TRIGGER SELL JOB!
+
+
 @retry(max_attempts=30, retry_delay=2)
 def createOrder(wallet, quote_response):
     url = 'https://quote-api.jup.ag/v6/swap'
