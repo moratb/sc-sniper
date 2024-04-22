@@ -105,6 +105,6 @@ def prepare_tx(wallet, asset_in=None, asset_out=None, amount=0, mode='sell'):
     latest_block_hash = getLatestBlockhash()
     lvbh = latest_block_hash.value.last_valid_block_height
     txs = [
-        {'txid':[],'s': False, 'mode':'sell', 'tx':transaction, 'lvbh':lvbh}
+        {'txid':[],'s': False, 'mode':mode, 'tx':transaction, 'lvbh':lvbh}
     ]
     return txs
