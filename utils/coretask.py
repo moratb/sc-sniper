@@ -9,4 +9,4 @@ def core_task(token, launch_time):
     decision = np.random.choice(a=2, size=1,p=[0.9,0.1])
     tx_example = get_quote(USDC_ca, token, 100*10**6)
     print("Task executed. Result: ", data_example, 'DECISION: ',decision)
-    print('QUOTE: ', tx_example.json())
+    print('QUOTE: ', tx_example)
