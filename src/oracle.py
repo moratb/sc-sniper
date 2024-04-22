@@ -13,7 +13,7 @@ while True:
     print('attempt start', start)
     #txs = prepare_tx(wallet=wallet, asset_in=asset_in)
     #result = executeTrade(txs)
-    if result==True:
+    if True:
         break
     else:
         continue
