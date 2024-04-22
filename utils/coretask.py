@@ -1,6 +1,6 @@
 import sys
-sys.path.insert(1,'./')
 from utils.common import *
+import numpy as np
 from utils.blockchain import *
 
 def core_task(token, launch_time):

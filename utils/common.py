@@ -8,8 +8,8 @@ import pandas as pd
 import numpy as np
 import os
 from dotenv import load_dotenv
-load_dotenv('../.env')
-apikey = os.getenv('bi_api_key')
+load_dotenv()
+API_KEY = os.getenv('bi_api_key')
 
 
 class SQLiteDB:
@@ -49,7 +49,7 @@ def retry(max_attempts=10, retry_delay=1):
 @retry(max_attempts=10, retry_delay=1)
 def get_price_data(token, time_from, time_to):
     url = "https://public-api.birdeye.so/defi/ohlcv"
-    headers = {"x-chain": "solana", "X-API-KEY": apikey}
+    headers = {"x-chain": "solana", "X-API-KEY": API_KEY}
     params = {
         "address": token,
         "type": '1m',

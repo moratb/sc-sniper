@@ -1,5 +1,4 @@
 import sys
-sys.path.insert(1, './')
 from utils.common import *
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore

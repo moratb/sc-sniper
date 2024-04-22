@@ -1,5 +1,4 @@
 import sys
-sys.path.insert(1,'./')
 from utils.common import *
 from utils.blockchain import *
 
