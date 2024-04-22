@@ -60,24 +60,3 @@ def get_price_data(token, time_from, time_to):
     prices_df = pd.DataFrame(response.json()['data']['items'])
     prices_df['address'] = token
     return prices_df
-
-
-@retry(max_attempts=30, retry_delay=2)
-def get_quote(cur_in, cur_out, inamount):
-    url = 'https://quote-api.jup.ag/v6/quote'
-    json_data = {
-        'amount': int(inamount*10**6),
-        'inputMint': cur_in,
-        'outputMint': cur_out
-    }
-    response = requests.get(url, headers={'Content-Type': 'application/json'}, params=json_data)
-    return response
-
-
-def core_task(token, launch_time):
-    data = get_price_data(token, int(launch_time.timestamp()), int((launch_time + dt.timedelta(minutes=20)).timestamp()))
-    data_example = data['c'].sum()
-    decision = np.random.choice(a=2, size=1,p=[0.9,0.1])
-    tx_example = get_quote('So11111111111111111111111111111111111111112', token, 1000)
-    print("Task executed. Result: ", data_example, 'DECISION: ',decision)
-    print('QUOTE: ', tx_example.json())
