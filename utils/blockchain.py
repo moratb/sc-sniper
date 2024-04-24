@@ -110,13 +110,14 @@ def get_tx(wallet, quote, fee_microlaports):
 
 def prepare_tx(wallet, asset_in=USDC_ca, asset_out=USDC_ca, amount=0, mode='sell', fee=10000):
     if mode == 'buy':
-        print('attempt to buy ', asset_out, 'for ', amount, ' USDC')
-        quote = get_quote(cur_in = asset_in, cur_out = asset_out, inamount = amount * 10 ** 6)
+        print('attempt to buy ', asset_out, 'for ', amount,  asset_in)
+        d = getDecimals(asset_in)
+        quote = get_quote(cur_in = asset_in, cur_out = asset_out, inamount = int(amount * 10 ** d))
     elif mode == 'sell':
         tow = getSPLtokens(wallet)
         amount_owned = tow.loc[tow['token_address'] == asset_in, 'amount'].iloc[0]  ## selling all
-        decimals = tow.loc[tow['token_address'] == asset_in, 'decimals'].iloc[0]
-        print('attempt to sell', int(amount_owned) / 10 ** int(decimals), 'of', asset_in)
+        d = tow.loc[tow['token_address'] == asset_in, 'decimals'].iloc[0]
+        print('attempt to sell', int(amount_owned) / 10 ** int(d), 'of', asset_in)
         quote = get_quote(cur_in = asset_in, cur_out = asset_out, inamount = int(amount_owned))
 
     tx_data = get_tx(wallet = wallet, quote = quote, fee_microlaports = fee)
@@ -168,11 +169,11 @@ def execute_tx(tx_object):
             print(dt.datetime.now(), 'tx resent')
             tx_object['txid'] += [send_response.value]
             t.sleep(2)
-            check_tx_intent(tx_object)
+            check_tx_intent(tx_object) ## needs to happen one more time before break
             if tx_object['s']:
                 print('FULL SUCCSS')
                 return True
         else:
             break
-    print('Execution Failed: ', set(tx_object['txid']), tx_object['mode'] ) 
+    print('Execution Failed: ', set(tx_object['txid']), tx_object['mode'], tx_object['s']) 
     return tx_object
