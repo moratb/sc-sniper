@@ -1,9 +1,5 @@
-import time as t
-import datetime as dt
 import pandas as pd
 from telethon import TelegramClient
-import os
-import sys
 from utils.common import *
 from dotenv import load_dotenv
 
@@ -15,7 +11,7 @@ class SCTelegramListener:
         self.telegram_api_hash = os.getenv('telegram_api_hash')
         self.telegram_phone_number = os.getenv('telegram_phone_number')
         self.pass2fa = os.getenv('telegram_pass2fa')
-        self.chat_name = 'Solana Scanner'
+        self.chat_name = 'Solana New Liquidity Pools'
         self.client = self.init_client()
 
     def init_client(self):
@@ -34,8 +30,7 @@ class SCTelegramListener:
             res[dialog.name] = dialog.id
         return res.get(self.chat_name)
 
-    async def read_messages(self, chat_id):
-        messages = await self.client.get_messages(chat_id, limit=5)
+    async def read_messages(self,messages):
         message = pd.DataFrame({'messages': messages})
         message['id'] = message['messages'].apply(lambda x: x.id)
         message['date'] = message['messages'].apply(lambda x: x.date)
@@ -52,7 +47,7 @@ class SCTelegramListener:
         message['s_ma'] = message['text'].str.extract(r'(?<=Mint Authority: )(.*)')
         message['s_fa'] = message['text'].str.extract(r'(?<=Freeze Authority: )(.*)')
         message['s_s'] = message['text'].str.extract(r'(?<=Score: )(.*)')
-        return messages
+        return message
 
     def parse_messages(self, messages):
         messages.loc[messages['s_mm'].str.contains('Yes'), 's_mm2'] = True
@@ -103,3 +98,10 @@ class SCTelegramListener:
         messages = await self.read_messages(chat_id)
         parsed = self.parse_messages(messages)
         return parsed
+
+    def write_to_db(self, message):
+        with SQLiteDB('dbs/calls.db') as conn:
+            query = "SELECT DISTINCT address FROM calls"
+            tracked_a = pd.read_sql_query(query, conn)
+            message_clean = message.loc[~message['address'].isin(tracked_a['address'].unique())]
+            message_clean.to_sql('calls', conn, if_exists='append', index=False)
