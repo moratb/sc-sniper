@@ -30,8 +30,13 @@ def sendTransaction(transaction):
 
 
 @retry()
-def checkTransaction(tx):
+def getTransaction(tx):
     return solana_client.get_transaction(tx, commitment='confirmed', max_supported_transaction_version=0)
+
+
+@retry()
+def getTransactionSig(tx):
+    return solana_client.get_signature_statuses([tx], search_transaction_history=False)
 
 
 @retry()
@@ -149,14 +154,13 @@ def sign_tx(tx_object, wallet):
 
 
 def check_tx_intent(tx_object):
-    ok_statuses = [{'Ok':None}]
     if (tx_object['txid']!=[]) & (tx_object['s']==False):
         print(dt.datetime.now(), 'confirming... ', [str(txid) for txid in set(tx_object['txid'])], tx_object['mode'])
         for tx in set(tx_object['txid']):
-            tx_result = checkTransaction(tx)
-            if tx_result.value != None:
-                status = json.loads(tx_result.to_json())['result']['meta']['status']
-                if status in ok_statuses:
+            tx_result = getTransactionSig(tx)
+            if tx_result.value[0]:
+                status = json.loads(tx_result.value[0].to_json())['confirmationStatus']
+                if status in ['confirmed','finalized']:
                     tx_object['s']=True
                     print('successful! ', status)
                     break
