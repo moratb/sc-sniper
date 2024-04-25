@@ -24,7 +24,7 @@ solana_client = Client(os.getenv('RPC'))
 wallet = Keypair.from_base58_string(PRIVATE_KEY)
 
 
-@retry()
+@retry(max_attempts=5, retry_delay=1)
 def sendTransaction(transaction):
     return solana_client.send_transaction(transaction) #, opts=TxOpts(skip_preflight=True))
 
@@ -89,6 +89,7 @@ def get_quote(cur_in, cur_out, inamount):
 
 @retry(max_attempts=30, retry_delay=2)
 def get_tx(wallet, quote, fee_microlaports):
+    print('fee will be: ', fee_microlaports)
     url = 'https://quote-api.jup.ag/v6/swap'
     headers = {'Content-Type': 'application/json'}
     json_data = {
@@ -107,22 +108,23 @@ def get_tx(wallet, quote, fee_microlaports):
         return None
 
 
-def prepare_tx(wallet, asset_in=None, asset_out=None, amount=0, mode='sell', fee=10000):
+def prepare_tx(wallet, asset_in=USDC_ca, asset_out=USDC_ca, amount=0, mode='sell', fee=10000):
     if mode == 'buy':
-        print('attempt to buy ', asset_out, 'for ', amount, ' USDC')
-        quote = get_quote(cur_in = USDC_ca, cur_out = asset_out, inamount = amount * 10 ** 6)
+        print('attempt to buy ', asset_out, 'for ', amount,  asset_in)
+        d = getDecimals(asset_in)
+        quote = get_quote(cur_in = asset_in, cur_out = asset_out, inamount = int(amount * 10 ** d))
     elif mode == 'sell':
         tow = getSPLtokens(wallet)
         amount_owned = tow.loc[tow['token_address'] == asset_in, 'amount'].iloc[0]  ## selling all
-        decimals = tow.loc[tow['token_address'] == asset_in, 'decimals'].iloc[0]
-        print('attempt to sell', int(amount_owned) / 10 ** int(decimals), 'of', asset_in)
-        quote = get_quote(cur_in = asset_in, cur_out = USDC_ca, inamount = int(amount_owned))
+        d = tow.loc[tow['token_address'] == asset_in, 'decimals'].iloc[0]
+        print('attempt to sell', int(amount_owned) / 10 ** int(d), 'of', asset_in)
+        quote = get_quote(cur_in = asset_in, cur_out = asset_out, inamount = int(amount_owned))
 
     tx_data = get_tx(wallet = wallet, quote = quote, fee_microlaports = fee)
     lvbh = getLatestBlockhash().value.last_valid_block_height
     bh = getLatestBlockhash().value.blockhash
-    tx_object = {'txid': [], 's': False, 'mode': mode, 'tx_data': tx_data, 'signed_tx': None,
-                 'lvbh': lvbh, 'bh': bh, 'priorityFee': tx_data['prioritizationFeeLamports']}
+    tx_object = {'txid': [], 's': False, 'mode': mode, 'tx_data': tx_data, 'signed_tx':None,
+                 'lvbh': lvbh, 'bh':bh, 'priorityFee':tx_data['prioritizationFeeLamports']}
     return tx_object
 
 
@@ -147,13 +149,10 @@ def sign_tx(tx_object, wallet):
 
 
 def check_tx_intent(tx_object):
-    ok_statuses = [
-        {'Ok':None},
-    ]
+    ok_statuses = [{'Ok':None}]
     if (tx_object['txid']!=[]) & (tx_object['s']==False):
-        tx_list = list(dict.fromkeys(tx_object['txid'])) 
-        print('checking_txs: ', [str(txid) for txid in tx_list], tx_object['s'], tx_object['mode'])
-        for tx in tx_list:
+        print(dt.datetime.now(), 'confirming... ', [str(txid) for txid in set(tx_object['txid'])], tx_object['mode'])
+        for tx in set(tx_object['txid']):
             tx_result = checkTransaction(tx)
             if tx_result.value != None:
                 status = json.loads(tx_result.to_json())['result']['meta']['status']
@@ -164,18 +163,17 @@ def check_tx_intent(tx_object):
 
 
 def execute_tx(tx_object):
-    cbh = getBlockHeight()
-    while tx_object['lvbh']>cbh:
-        if (tx_object['s']==False):
-            send_response = sendTransaction(tx_object['signed_tx'])
+    while (getBlockHeight() < tx_object['lvbh']) and not tx_object['s']:
+        send_response = sendTransaction(tx_object['signed_tx'])
+        if send_response:
+            print(dt.datetime.now(), 'tx resent')
             tx_object['txid'] += [send_response.value]
-        t.sleep(2)
-        check_tx_intent(tx_object)
-        if tx_object['s']==True:
-            print('FULL SUCCSS')
-            return True
+            t.sleep(2)
+            check_tx_intent(tx_object) ## needs to happen one more time before break
+            if tx_object['s']:
+                print('FULL SUCCSS')
+                return True
         else:
-            cbh = getBlockHeight()
-            continue
-    print('Execution Failed: ',  {key:tx_object[key] for key in ['txid','s','mode','lvbh']}) 
+            break
+    print('Execution Failed: ', set(tx_object['txid']), tx_object['mode'], tx_object['s']) 
     return tx_object
