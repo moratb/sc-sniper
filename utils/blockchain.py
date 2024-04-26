@@ -4,10 +4,13 @@ from solders.compute_budget import set_compute_unit_limit
 from solders.compute_budget import set_compute_unit_price
 from solders.transaction import VersionedTransaction
 from solana.rpc.api import Client
+from solana.rpc.async_api import AsyncClient
 from solders.keypair import Keypair
 from solana.rpc.types import TxOpts, TokenAccountOpts
 from solders.pubkey import Pubkey
 from solders import message
+import asyncio
+import httpx
 import json
 import base64
 from dotenv import load_dotenv
@@ -26,7 +29,7 @@ wallet = Keypair.from_base58_string(PRIVATE_KEY)
 
 @retry(max_attempts=5, retry_delay=1)
 def sendTransaction(transaction):
-    return solana_client.send_transaction(transaction) #, opts=TxOpts(skip_preflight=True))
+    return solana_client.send_transaction(transaction, opts=TxOpts(skip_preflight=True))
 
 
 @retry()
@@ -41,7 +44,7 @@ def getTransactionSig(tx):
 
 @retry()
 def getLatestBlockhash():
-    return solana_client.get_latest_blockhash(commitment='finalized')
+    return solana_client.get_latest_blockhash(commitment='confirmed')
 
 
 @retry()
@@ -127,9 +130,7 @@ def prepare_tx(wallet, asset_in=USDC_ca, asset_out=USDC_ca, amount=0, mode='sell
 
     tx_data = get_tx(wallet = wallet, quote = quote, fee_microlaports = fee)
     lvbh = getLatestBlockhash().value.last_valid_block_height
-    bh = getLatestBlockhash().value.blockhash
-    tx_object = {'txid': [], 's': False, 'mode': mode, 'tx_data': tx_data, 'signed_tx':None,
-                 'lvbh': lvbh, 'bh':bh, 'priorityFee':tx_data['prioritizationFeeLamports']}
+    tx_object = {'txid': None, 'mode': mode, 'tx_data': tx_data, 'signed_tx':None, 'lvbh': lvbh}
     return tx_object
 
 
@@ -137,47 +138,98 @@ def sign_tx(tx_object, wallet):
     tx_data = tx_object['tx_data']
     tx_bytes = base64.b64decode(tx_data['swapTransaction'])
     raw_tx = VersionedTransaction.from_bytes(tx_bytes)
-
-    ## Gotta overwrite TX with more recent final blockhash
-    new_raw_tx = message.MessageV0(
-        header=raw_tx.message.header,
-        account_keys=raw_tx.message.account_keys,
-        recent_blockhash=tx_object['bh'],
-        instructions=raw_tx.message.instructions,
-        address_table_lookups=raw_tx.message.address_table_lookups
-    )
-
-    signature = wallet.sign_message(message.to_bytes_versioned(new_raw_tx))
-    signed_tx = VersionedTransaction.populate(new_raw_tx, [signature])
+    signature = wallet.sign_message(message.to_bytes_versioned(raw_tx.message))
+    signed_tx = VersionedTransaction.populate(raw_tx.message, [signature])
     print('Success sign!')
     return signed_tx
 
 
-def check_tx_intent(tx_object):
-    if (tx_object['txid']!=[]) & (tx_object['s']==False):
-        print(dt.datetime.now(), 'confirming... ', [str(txid) for txid in set(tx_object['txid'])], tx_object['mode'])
-        for tx in set(tx_object['txid']):
-            tx_result = getTransactionSig(tx)
-            if tx_result.value[0]:
-                status = json.loads(tx_result.value[0].to_json())['confirmationStatus']
-                if status in ['confirmed','finalized']:
-                    tx_object['s']=True
-                    print('successful! ', status)
-                    break
+## ASYNC SENDER
+async def manual_send(tx, retry_id):
+    headers = {
+        "Content-Type": "application/json"
+    }
+    data = {
+        "jsonrpc": "2.0",
+        "method": "sendTransaction",
+        "id": retry_id,
+        "params": [
+            tx,
+            {
+                "skipPreflight": True,
+                "preflightCommitment": "finalized",
+                "encoding": "base64",
+                "maxRetries": None,
+                "minContextSlot": None
+            }
+        ]
+    }
+    async with httpx.AsyncClient() as client:
+        tx_response = await client.post(os.getenv('RPC'), headers=headers, json=data)
+        return tx_response 
 
+async def resender(encoded_tx, abort_signal):
+    retry_id = 0
+    while not abort_signal.is_set():
+        try:
+            print(retry_id)
+            #await sca.send_transaction(tx, opts=TxOpts(skip_preflight=True))
+            await manual_send(encoded_tx, retry_id)
+            retry_id+=1 # Increment the retry ID for each attempt
+        except Exception as e:
+            print(f"Failed to resend transaction: {e}")
+        await asyncio.sleep(2)
 
-def execute_tx(tx_object):
-    while (getBlockHeight() < tx_object['lvbh']) and not tx_object['s']:
-        send_response = sendTransaction(tx_object['signed_tx'])
-        if send_response:
-            print(dt.datetime.now(), 'tx resent')
-            tx_object['txid'] += [send_response.value]
-            t.sleep(2)
-            check_tx_intent(tx_object) ## needs to happen one more time before break
-            if tx_object['s']:
-                print('FULL SUCCSS')
-                return True
-        else:
-            break
-    print('Execution Failed: ', set(tx_object['txid']), tx_object['mode'], tx_object['s']) 
-    return tx_object
+async def confirm_transaction(sca, tx_sig, lvbh, abort_signal):
+    while not abort_signal.is_set():
+        try:
+            tx_status = await sca.confirm_transaction(tx_sig=tx_sig, commitment='confirmed', last_valid_block_height=lvbh)
+            return tx_status
+        except Exception as e:
+            abort_signal.set()
+            print(f"Error during transaction confirmation: {e}")
+    return None
+
+async def check_transaction_status(sca, tx_sig, abort_signal):
+    while not abort_signal.is_set():
+        tx_status = await sca.get_signature_statuses([tx_sig], search_transaction_history=False)
+        if tx_status.value[0]:
+            tx_status
+        await asyncio.sleep(2)
+    return None
+
+async def txsender(tx_object):
+    print(dt.datetime.now(), 'attempting to send')
+    print('txid: ',tx_object['txid'],
+          'fee: ',tx_object['tx_data']['prioritizationFeeLamports'],
+          'lvbh: ',tx_object['lvbh'])
+    encoded_tx = base64.b64encode(bytes(tx_object['signed_tx'])).decode('utf-8')
+    tx_sig = tx_object['txid']
+    lvbh = tx_object['lvbh']
+    sca = AsyncClient(os.getenv('RPC'))
+    abort_signal = asyncio.Event()
+    try:
+        resender_task = asyncio.create_task(resender(encoded_tx, abort_signal))
+        confirmation_task = confirm_transaction(sca, tx_sig, lvbh, abort_signal)
+        status_check_task = check_transaction_status(sca, tx_sig, abort_signal)
+        done, pending = await asyncio.wait(
+            [confirmation_task, status_check_task],
+            return_when=asyncio.FIRST_COMPLETED
+        )
+        # Process the result of the first completed task
+        for task in done:
+            res = task.result()
+            if res:
+                tx_status = json.loads(res.value[0].to_json())
+                if tx_status['confirmationStatus'] in ('confirmed','finalized'):
+                    print('Transaction sent!')
+                    return tx_status['status']
+
+    except Exception as e:
+        print(f"An error occurred: {e}")
+    finally:
+        abort_signal.set()  # Ensure all tasks are cancelled
+        resender_task.cancel()
+        await resender_task
+
+    return None
