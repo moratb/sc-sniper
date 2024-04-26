@@ -169,7 +169,7 @@ async def manual_send(tx, retry_id):
         return tx_response 
 
 async def resender(encoded_tx, abort_signal):
-    retry_id = 0
+    retry_id = 1
     while not abort_signal.is_set():
         try:
             print(retry_id)
