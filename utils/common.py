@@ -5,7 +5,6 @@ import time as t
 import datetime as dt
 import requests
 import pandas as pd
-import numpy as np
 import os
 from dotenv import load_dotenv
 load_dotenv()
@@ -60,3 +59,17 @@ def get_price_data(token, time_from, time_to):
     prices_df = pd.DataFrame(response.json()['data']['items'])
     prices_df['address'] = token
     return prices_df
+
+
+@retry(max_attempts=10, retry_delay=1)
+def check_multi_price(token_list):
+    url = "https://public-api.birdeye.so/defi/multi_price"
+    headers = {"x-chain": "solana", "X-API-KEY": API_KEY}
+    params = {
+        "list_address": ','.join(token_list),
+        "include_liquidity": 'true'
+    }
+    response = requests.get(url, headers=headers, params=params)
+    price_data = {token:{'price':data['value'],'liquidity':data['liquidity']} 
+                  for token,data in response.json()['data'].items()}
+    return price_data
