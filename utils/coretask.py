@@ -16,8 +16,8 @@ def core_task(token, launch_time):
         while True:
             print(dt.datetime.now(),' Attempt to BUY: ',token)
             ## PART 3 - BUY
-            price_data = check_multi_price([SOL_ca])
-            SOL_AMOUNT = USD_AMOUNT / price_data[SOL_ca]['price']
+            cur_price = check_multi_price([SOL_ca])
+            SOL_AMOUNT = USD_AMOUNT / cur_price[SOL_ca]['price']
             tx_object = prepare_tx(wallet=wallet, asset_in=SOL_ca, asset_out=token,
                                    amount=SOL_AMOUNT, mode='buy', fee=PRIORITY_FEE)
             tx_object['signed_tx'] = sign_tx(tx_object, wallet)
