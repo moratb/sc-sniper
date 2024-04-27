@@ -174,9 +174,12 @@ async def confirm_transaction(sca, tx_sig, lvbh, abort_signal):
 
 async def check_transaction_status(sca, tx_sig, abort_signal):
     while not abort_signal.is_set():
-        tx_status = await sca.get_signature_statuses([tx_sig], search_transaction_history=False)
-        if tx_status.value[0]:
-            tx_status
+        try:
+            tx_status = await sca.get_signature_statuses([tx_sig], search_transaction_history=False)
+            if tx_status.value[0]:
+                return tx_status
+        except Exception as e:
+            print(f"Get signatures issue: {e}")
         await asyncio.sleep(2)
 
 
