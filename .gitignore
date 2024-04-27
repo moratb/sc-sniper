@@ -2,4 +2,5 @@
 /dbs/calls.db
 /dbs/jobs.sqlite
 /utils/__pycache__
+/examples/new_all_calls.csv
 .vscode

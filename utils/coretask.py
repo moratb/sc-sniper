@@ -1,21 +1,27 @@
 from utils.common import *
 from utils.blockchain import *
+from utils.ml import *
 
 USD_AMOUNT = 1
 PRIORITY_FEE = 5000
 
 def core_task(token, launch_time):
-    ## PART 1 - GET DATA AND PREPARE
-    data = get_price_data(token, int(launch_time.timestamp()), int((launch_time + dt.timedelta(minutes=20)).timestamp()))
-    data_example = data['c'].sum()
+    ## PART 1 - GET STATIC DATA
+    static_data = get_static_data(token)
 
-    ## PART 2 - APPLY ML
-    decision = np.random.choice(a=2, size=1,p=[0.9,0.1])[0]
+    ## PART 2 - GET OCHL DATA AND PREPARE
+    ochl_data = get_ochl_data(token, launch_time)
 
-    if decision:
+    ## PART 3 - PREPARE DATA 
+    final_df = prepare_for_ml(static_data, ochl_data)
+
+    ## PART 4 - APPLY ML
+    decision1, decision2 = make_predictions(final_df)
+
+    if decision1==1 & decision2>5:
         while True:
             print(dt.datetime.now(),' Attempt to BUY: ',token)
-            ## PART 3 - BUY
+            ## PART 5 - BUY
             cur_price = check_multi_price([SOL_ca])
             SOL_AMOUNT = USD_AMOUNT / cur_price[SOL_ca]['price']
             tx_object = prepare_tx(wallet=wallet, asset_in=SOL_ca, asset_out=token,
@@ -26,6 +32,7 @@ def core_task(token, launch_time):
             result = asyncio.run(txsender(tx_object))
             print('Result: ', result)
             if result == {'Ok': None}:
+                print('SUCCESS BUY')
                 break
             else:
                 continue
