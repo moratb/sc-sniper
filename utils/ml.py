@@ -5,7 +5,7 @@ import ta
 
 
 def get_static_data(token):
-    with SQLiteDB('../dbs/calls.db') as conn:
+    with SQLiteDB('./dbs/calls.db') as conn:
         query = f'SELECT * FROM calls WHERE address="{token}"'
         df = pd.read_sql_query(query, conn)
         static_features = ['s_mm2','s_ma2','s_fa2','s_q','s_sni','mcap_num','liq_num']
@@ -96,8 +96,8 @@ def prepare_for_ml(static_data, ochl_data):
 
 
 def make_predictions(final_df):
-    model_clf = pickle.load(open('../models/model_clf.sav', 'rb'))
-    model_regr = pickle.load(open('../models/model_regr.sav', 'rb'))
+    model_clf = pickle.load(open('./models/model_clf.sav', 'rb'))
+    model_regr = pickle.load(open('./models/model_regr.sav', 'rb'))
     SCAM_PREDICTION = model_clf.predict(final_df.drop(columns='address').rename(columns={'mcap_num':'Mcap_num','liq_num':'Liq_num'}))[0]
     X_PREDICTION = model_regr.predict(final_df.drop(columns='address').rename(columns={'mcap_num':'Mcap_num','liq_num':'Liq_num'}))[0]
     return SCAM_PREDICTION, X_PREDICTION
