@@ -2,15 +2,19 @@ import pandas as pd
 from telethon import TelegramClient
 from utils.common import *
 from dotenv import load_dotenv
+import logging
+
+logging.basicConfig()
+logging.getLogger('apscheduler').setLevel(logging.DEBUG)
 
 
 class SCTelegramListener:
     def __init__(self):
         load_dotenv()
-        self.telegram_api_id = os.getenv('telegram_api_id')
-        self.telegram_api_hash = os.getenv('telegram_api_hash')
-        self.telegram_phone_number = os.getenv('telegram_phone_number')
-        self.pass2fa = os.getenv('telegram_pass2fa')
+        self.telegram_api_id = os.getenv('telegram_api_id_2')
+        self.telegram_api_hash = os.getenv('telegram_api_hash_2')
+        self.telegram_phone_number = os.getenv('telegram_phone_number_2')
+        self.pass2fa = os.getenv('telegram_pass2fa_2')
         self.chat_name = 'Solana New Liquidity Pools'
         self.client = self.init_client()
 
@@ -30,8 +34,8 @@ class SCTelegramListener:
             res[dialog.name] = dialog.id
         return res.get(self.chat_name)
 
-    async def read_messages(self,messages):
-        message = pd.DataFrame({'messages': messages})
+    def read_messages(self,messages):
+        message = pd.DataFrame({'messages': [messages]})
         message['id'] = message['messages'].apply(lambda x: x.id)
         message['date'] = message['messages'].apply(lambda x: x.date)
         message['text'] = message['messages'].apply(lambda x: x.text)

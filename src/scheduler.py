@@ -1,4 +1,6 @@
 import datetime as dt
+import os
+
 from pytz import utc
 import pandas as pd
 import sys
@@ -13,17 +15,21 @@ from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
 class SCJobScheduler:
 
     def __init__(self):
-        self.jobstores = {
-            'default': SQLAlchemyJobStore(url='sqlite:///dbs/jobs.sqlite')
-        }
+        self.jobstores = {'default': SQLAlchemyJobStore(url='sqlite:///dbs/jobs.sqlite')
+                          }
         self.executors = {
-            'default': {'type': 'threadpool', 'max_workers': 5}
+            'default': {'type': 'threadpool', 'max_workers': 1}
         }
         self.job_defaults = {
             'coalesce': False,
-            'max_instances': 3
+            'max_instances': 1
         }
         self.scheduler = None
+
+    def dummy_func(self, token, launch_time):
+        print(token, launch_time)
+        print('dummy func triggered')
+        return
 
     def update_launch_date(self, index, status, time):
         ltime = f'"{time}"' if time else "NULL"
@@ -47,25 +53,21 @@ class SCJobScheduler:
                 if not tmp_df.empty:
                     launched = True
                     launch_time = dt.datetime.fromtimestamp(tmp_df['unixTime'].min(), tz=dt.timezone.utc)
-                    self.scheduler.add_job(func=dummy_func,
+                    self.scheduler.add_job(func=self.dummy_func,
                                            trigger='date',
                                            run_date=str(launch_time + dt.timedelta(minutes=20)),
                                            id=str(row['id']),
                                            jobstore=self.jobstores['default'],
+                                           replace_existing=True,
                                            kwargs={'token': row['address'], 'launch_time': launch_time})
                 else:
+                    print('not launched')
                     launched = False
                     launch_time = None
                 self.update_launch_date(row['id'], launched, launch_time)
 
     def init_scheduler(self):
         self.scheduler = BackgroundScheduler(jobstores=self.jobstores, executors=self.executors,
-                                             job_defaults=self.job_defaults)
+                                             job_defaults=self.job_defaults, timezone="UTC")
+        self.scheduler.start()
         return
-
-
-
-def dummy_func(token, launch_time):
-    print(token, launch_time)
-    print('dummy func triggered')
-    return

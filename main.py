@@ -11,7 +11,7 @@ async def messages_listening():
     chat_id = await handler.get_chat_id(client)
 
     @client.on(events.NewMessage(chats=[chat_id]))
-    def handle_message(event):
+    async def handle_message(event):
         message = event.message
         msg = handler.read_messages(message)
         parsed = handler.parse_messages(msg)
@@ -25,9 +25,17 @@ async def messages_listening():
 def messages_listening_thread():
     asyncio.run(messages_listening())
 
+def jobs_scheduling_thread():
+    scheduler = SCJobScheduler()
+    scheduler.init_scheduler()
+    scheduler.schedule_jobs()
+    scheduler.scheduler.shutdown()
+
 
 if __name__ == "__main__":
-    threading.Thread(target=messages_listening_thread).run()
-    # scheduler = SCJobScheduler()
-    # scheduler.init_scheduler()
-    # scheduler.schedule_jobs()
+    t1 = threading.Thread(target=messages_listening_thread)
+    t2 = threading.Thread(target=jobs_scheduling_thread)
+    t1.start()
+    t2.start()
+
+
