@@ -79,7 +79,7 @@ def prepare_for_ml(static_data, ochl_data):
     ## cleanup
     final_df = prepared_data.loc[(prepared_data['time']<=20)]
     if final_df['target_check'].min() == 0:
-        print('drop') ## return NONE!!
+        return None
     final_df = final_df.drop(columns=['type','h','o','l','c','unixTime','v','o_first', 'c_first', 'h_first', 'l_first','target_check'])
 
     ## formating

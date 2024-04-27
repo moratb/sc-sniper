@@ -14,6 +14,9 @@ def core_task(token, launch_time):
 
     ## PART 3 - PREPARE DATA 
     final_df = prepare_for_ml(static_data, ochl_data)
+    if not isinstance(final_df, pd.DataFrame):
+        print('Test 1 not passed')
+        return None
 
     ## PART 4 - APPLY ML
     decision1, decision2 = make_predictions(final_df)
@@ -36,3 +39,6 @@ def core_task(token, launch_time):
                 break
             else:
                 continue
+    else:
+        print('Test 2 not passed', decision1, decision2)
+        return None
