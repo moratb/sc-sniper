@@ -1,8 +1,7 @@
 from utils.common import *
 
-from solders.compute_budget import set_compute_unit_limit
-from solders.compute_budget import set_compute_unit_price
 from solders.transaction import VersionedTransaction
+from solana.rpc.core import TransactionExpiredBlockheightExceededError
 from solana.rpc.api import Client
 from solana.rpc.async_api import AsyncClient
 from solders.keypair import Keypair
@@ -13,6 +12,8 @@ import asyncio
 import httpx
 import json
 import base64
+import uuid
+from contextlib import suppress
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -33,28 +34,8 @@ def sendTransaction(transaction):
 
 
 @retry()
-def getTransaction(tx):
-    return solana_client.get_transaction(tx, commitment='confirmed', max_supported_transaction_version=0)
-
-
-@retry()
-def getTransactionSig(tx):
-    return solana_client.get_signature_statuses([tx], search_transaction_history=False)
-
-
-@retry()
 def getLatestBlockhash():
     return solana_client.get_latest_blockhash(commitment='confirmed')
-
-
-@retry()
-def getBlockHeight():
-    return solana_client.get_block_height().value
-
-
-@retry()
-def getTokenAccountBalance(token):
-    return solana_client.get_token_account_balance(token).value.ui_amount
 
 
 @retry()
@@ -144,20 +125,19 @@ def sign_tx(tx_object, wallet):
     return signed_tx
 
 
-## ASYNC SENDER
-async def manual_send(tx, retry_id):
+## ASYNC TRANSACTION SENDER
+async def manual_send(tx):
     headers = {
         "Content-Type": "application/json"
     }
     data = {
-        "jsonrpc": "2.0",
         "method": "sendTransaction",
-        "id": retry_id,
+        "jsonrpc": "2.0",
+        "id": str(uuid.uuid4()),
         "params": [
             tx,
             {
                 "skipPreflight": True,
-                "preflightCommitment": "finalized",
                 "encoding": "base64",
                 "maxRetries": None,
                 "minContextSlot": None
@@ -168,27 +148,29 @@ async def manual_send(tx, retry_id):
         tx_response = await client.post(os.getenv('RPC'), headers=headers, json=data)
         return tx_response 
 
+
 async def resender(encoded_tx, abort_signal):
-    retry_id = 1
+    retry_id = 0
     while not abort_signal.is_set():
         try:
-            print(retry_id)
-            #await sca.send_transaction(tx, opts=TxOpts(skip_preflight=True))
-            await manual_send(encoded_tx, retry_id)
-            retry_id+=1 # Increment the retry ID for each attempt
+            print('Attempt: ',retry_id := retry_id + 1)
+            await manual_send(encoded_tx)
         except Exception as e:
             print(f"Failed to resend transaction: {e}")
         await asyncio.sleep(2)
+
 
 async def confirm_transaction(sca, tx_sig, lvbh, abort_signal):
     while not abort_signal.is_set():
         try:
             tx_status = await sca.confirm_transaction(tx_sig=tx_sig, commitment='confirmed', last_valid_block_height=lvbh)
             return tx_status
-        except Exception as e:
+        except TransactionExpiredBlockheightExceededError as e:
             abort_signal.set()
-            print(f"Error during transaction confirmation: {e}")
-    return None
+            print(f"Block height exceeded: {e}")
+        except Exception as e:
+            print(f"Confirmation issue: {e}")
+
 
 async def check_transaction_status(sca, tx_sig, abort_signal):
     while not abort_signal.is_set():
@@ -196,7 +178,7 @@ async def check_transaction_status(sca, tx_sig, abort_signal):
         if tx_status.value[0]:
             tx_status
         await asyncio.sleep(2)
-    return None
+
 
 async def txsender(tx_object):
     print(dt.datetime.now(), 'attempting to send')
@@ -210,8 +192,8 @@ async def txsender(tx_object):
     abort_signal = asyncio.Event()
     try:
         resender_task = asyncio.create_task(resender(encoded_tx, abort_signal))
-        confirmation_task = confirm_transaction(sca, tx_sig, lvbh, abort_signal)
-        status_check_task = check_transaction_status(sca, tx_sig, abort_signal)
+        confirmation_task = asyncio.create_task(confirm_transaction(sca, tx_sig, lvbh, abort_signal))
+        status_check_task = asyncio.create_task(check_transaction_status(sca, tx_sig, abort_signal))
         done, pending = await asyncio.wait(
             [confirmation_task, status_check_task],
             return_when=asyncio.FIRST_COMPLETED
@@ -222,14 +204,20 @@ async def txsender(tx_object):
             if res:
                 tx_status = json.loads(res.value[0].to_json())
                 if tx_status['confirmationStatus'] in ('confirmed','finalized'):
-                    print('Transaction sent!')
+                    print(dt.datetime.now(), 'Transaction sent!')
                     return tx_status['status']
 
     except Exception as e:
         print(f"An error occurred: {e}")
+
     finally:
         abort_signal.set()  # Ensure all tasks are cancelled
-        resender_task.cancel()
-        await resender_task
+        task_set = asyncio.all_tasks()
+        for task in task_set:
+            task.cancel()
+            with suppress(asyncio.CancelledError):
+                await task 
+        print(confirmation_task.done(), resender_task.done(), status_check_task.done())
+        await sca.close()
 
     return None
