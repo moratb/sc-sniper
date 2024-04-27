@@ -5,6 +5,7 @@ import time as t
 import datetime as dt
 import requests
 import pandas as pd
+import numpy as np
 import os
 from dotenv import load_dotenv
 load_dotenv()

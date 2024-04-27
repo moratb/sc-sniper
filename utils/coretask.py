@@ -1,6 +1,5 @@
 from utils.common import *
 from utils.blockchain import *
-import numpy as np
 
 USD_AMOUNT = 1
 PRIORITY_FEE = 5000
