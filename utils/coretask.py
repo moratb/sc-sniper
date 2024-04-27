@@ -18,7 +18,7 @@ def core_task(token, launch_time):
     ## PART 4 - APPLY ML
     decision1, decision2 = make_predictions(final_df)
 
-    if decision1==1 & decision2>5:
+    if (decision1==1) & (decision2>5):
         while True:
             print(dt.datetime.now(),' Attempt to BUY: ',token)
             ## PART 5 - BUY
