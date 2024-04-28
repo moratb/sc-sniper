@@ -3,6 +3,7 @@ from src.listnerer import SCTelegramListener
 import asyncio
 from telethon.sync import events
 import threading
+from multiprocessing import Process
 
 
 async def messages_listening():
@@ -29,12 +30,14 @@ def jobs_scheduling_thread():
     scheduler = SCJobScheduler()
     scheduler.init_scheduler()
     scheduler.schedule_jobs()
-    scheduler.scheduler.shutdown()
+    scheduler.scheduler.start()
+    while True:
+        pass #TODO maybe think about smth better to keep thread alive
 
 
 if __name__ == "__main__":
     t1 = threading.Thread(target=messages_listening_thread)
-    t2 = threading.Thread(target=jobs_scheduling_thread)
+    t2 = Process(target=jobs_scheduling_thread) # USing process poll instead of thread to match executor config
     t1.start()
     t2.start()
 
