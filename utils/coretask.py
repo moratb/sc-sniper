@@ -2,7 +2,7 @@ from utils.common import *
 from utils.blockchain import *
 from utils.ml import *
 
-USD_AMOUNT = 1
+USD_AMOUNT = 0.1
 PRIORITY_FEE = 5000
 
 def core_task(token, launch_time):
@@ -36,6 +36,19 @@ def core_task(token, launch_time):
             print('Result: ', result)
             if result == {'Ok': None}:
                 print('SUCCESS BUY')
+                buy_price = check_buy_price(tx_object['txid'], USD_AMOUNT)
+                ## PART 6 WRITE TO DB
+                with SQLiteDB('dbs/calls.db') as conn:
+                    update_statement = f"""
+                    UPDATE calls
+                    SET
+                        buy = {True},
+                        buy_time = "{dt.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+                        buy_price = {buy_price}
+                    WHERE address = "{token}"
+                    """
+                    conn.execute(update_statement)
+                print('DB updated with buy data!')
                 break
             else:
                 continue

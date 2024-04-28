@@ -34,6 +34,11 @@ def sendTransaction(transaction):
 
 
 @retry()
+def checkTransaction(tx):
+    return solana_client.get_transaction(tx, commitment='confirmed', max_supported_transaction_version=0)
+
+
+@retry()
 def getLatestBlockhash():
     return solana_client.get_latest_blockhash(commitment='confirmed')
 
@@ -42,6 +47,24 @@ def getLatestBlockhash():
 def getDecimals(token):
     res = solana_client.get_account_info_json_parsed(Pubkey.from_string(token))
     return json.loads(res.to_json())['result']['value']['data']['parsed']['info']['decimals']
+
+
+@retry(max_attempts=5, retry_delay=2)
+def check_buy_price(tx, usd_in):
+    tx_data = checkTransaction(tx)
+    tx_json = json.loads(tx_data.to_json())['result']
+    balances_pre = pd.DataFrame(tx_json['meta']['preTokenBalances'])
+    balances_pre['uiAmount'] =balances_pre['uiTokenAmount'].apply(lambda x:x['uiAmount'])
+    balances_post = pd.DataFrame(tx_json['meta']['postTokenBalances'])
+    balances_post['uiAmount'] =balances_post['uiTokenAmount'].apply(lambda x:x['uiAmount'])
+    comb = pd.merge(balances_pre.drop(columns=['uiTokenAmount','programId']),
+            balances_post.drop(columns=['uiTokenAmount','programId']),
+            on=['accountIndex','mint','owner'],
+            suffixes=['_pre','_post'],how='outer').fillna(0)
+    comb['change'] = comb['uiAmount_post'] - comb['uiAmount_pre']
+    comb[(comb['owner']==str(wallet.pubkey())) & (comb['change']>0)]['change']
+    out_amount = comb[(comb['owner']==str(wallet.pubkey())) & (comb['change']>0)]['change'].iloc[0]
+    return usd_in/out_amount
 
 
 @retry()
