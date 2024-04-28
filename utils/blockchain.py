@@ -77,6 +77,7 @@ def getSPLtokens(wallet):
     splt_df['token_address'] = splt_df['account'].apply(lambda x: x['data']['parsed']['info']['mint'])
     splt_df['decimals'] = splt_df['account'].apply(lambda x: x['data']['parsed']['info']['tokenAmount']['decimals'])
     splt_df['amount'] = splt_df['account'].apply(lambda x: x['data']['parsed']['info']['tokenAmount']['amount'])
+    splt_df['amount_int'] = splt_df['account'].apply(lambda x: x['data']['parsed']['info']['tokenAmount']['uiAmount'])
     return splt_df
 
 
@@ -226,7 +227,7 @@ async def txsender(tx_object):
         )
         # Process the result of the first completed task
         for task in done:
-            res = task.result()
+            res = task.result() ## * FIX case when rpc is not synced (add get_transction check) 
             if res:
                 tx_status = json.loads(res.value[0].to_json())
                 if tx_status['confirmationStatus'] in ('confirmed','finalized'):
@@ -247,3 +248,15 @@ async def txsender(tx_object):
         await sca.close()
 
     return None
+
+
+def tx_procedure(wallet, asset_in=USDC_ca, asset_out=USDC_ca, amount=0, mode='sell', fee=0):
+    tx_object = prepare_tx(wallet=wallet, asset_in=asset_in, asset_out=asset_out,
+                            amount=amount, mode=mode, fee=fee)
+    tx_object['signed_tx'] = sign_tx(tx_object, wallet)
+    send_response = sendTransaction(tx_object['signed_tx'])
+    tx_object['txid'] = send_response.value
+    result = asyncio.run(txsender(tx_object))
+    ## TODO: FIX case when rpc is not synced (add get_transction check)
+    ## 2wa3SePx7Nj8LckdPN29Wm5HoGY5pQEfmVVnGKwkVbuLmParhUUGAsbfF6S8n7R3AtTMPhH73YwVi1emYDYYPZrj
+    return result, tx_object['txid']

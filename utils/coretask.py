@@ -27,23 +27,19 @@ def core_task(token, launch_time):
             ## PART 5 - BUY
             cur_price = check_multi_price([SOL_ca])
             SOL_AMOUNT = USD_AMOUNT / cur_price[SOL_ca]['price']
-            tx_object = prepare_tx(wallet=wallet, asset_in=SOL_ca, asset_out=token,
-                                   amount=SOL_AMOUNT, mode='buy', fee=PRIORITY_FEE)
-            tx_object['signed_tx'] = sign_tx(tx_object, wallet)
-            send_response = sendTransaction(tx_object['signed_tx'])
-            tx_object['txid'] = send_response.value
-            result = asyncio.run(txsender(tx_object))
-            print('Result: ', result)
+            result, txid = tx_procedure(wallet=wallet, asset_in=SOL_ca, asset_out=token,
+                                        amount=SOL_AMOUNT, mode='buy', fee=PRIORITY_FEE)
+            print('Result: ', result, txid)
             if result == {'Ok': None}:
-                print('SUCCESS BUY')
-                buy_price = check_buy_price(tx_object['txid'], USD_AMOUNT)
+                print('Success BUY', token, txid)
+                buy_price = check_buy_price(txid, USD_AMOUNT)
                 ## PART 6 WRITE TO DB
                 with SQLiteDB('dbs/calls.db') as conn:
                     update_statement = f"""
                     UPDATE calls
                     SET
                         buy = {True},
-                        buy_time = "{dt.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+                        buy_time = "{dt.datetime.now(dt.timezone.utc).strftime('%Y-%m-%d %H:%M:%S')}",
                         buy_price = {buy_price}
                     WHERE address = "{token}"
                     """

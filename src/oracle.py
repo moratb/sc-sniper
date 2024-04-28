@@ -1,18 +1,76 @@
 import sys
+sys.path.insert(1, './')
 from utils.common import *
 from utils.blockchain import *
 
-## first GET PRICES FROM CURRENT TOKENS IN THE WALLET - getSPLtokens(wallet)
-## via - https://public-api.birdeye.so/defi/multi_price and compare with buy prices.
-## If any are price = 2x, or price <=0.9x THEN TRIGGER SELL JOB!
 
-## execute sell until through
-while True:
-    start = dt.datetime.now()
-    print('attempt start', start)
-    #txs = prepare_tx(wallet=wallet, asset_in=asset_in)
-    #result = executeTrade(txs)
-    if True:
-        break
-    else:
-        continue
+class SCOracle:
+
+    def __init__(self):
+        self.take_profit = 1.5
+        self.stop_loss = 0.9
+        self.priority_fee = 5000
+
+
+    def get_db_tokens(self):
+        with SQLiteDB('./dbs/calls.db') as conn:
+            query = "SELECT *  FROM calls WHERE buy = 1"
+            db_tokens = pd.read_sql_query(query, conn)
+        return db_tokens
+    
+    def update_db_on_sell(self, token):
+        with SQLiteDB('dbs/calls.db') as conn:
+            update_statement = f"""
+            UPDATE calls
+            SET buy = {False}
+            WHERE address = "{token}"
+            """
+            conn.execute(update_statement)
+    
+    def get_wallet_tokens(self):
+        return getSPLtokens(wallet)
+    
+
+    def calculate_prices(self, db_tokens, wallet_tokens):
+        tracked_tokens = pd.merge(
+            wallet_tokens,
+            db_tokens[['address','buy_price']],
+            how='inner', left_on='token_address', right_on='address'
+        )
+        ## TODO: Only trigger if tracked_tokens is not empty
+        cur_prices = check_multi_price(tracked_tokens['token_address'].to_list())
+        cur_prices = pd.DataFrame().from_dict(cur_prices,orient='index')
+        cur_prices = cur_prices.reset_index().rename(columns={'index':'address'})
+        tracked_tokens = pd.merge(tracked_tokens, cur_prices, how='inner', on='address')
+        tracked_tokens['liq_req'] = tracked_tokens['amount_int']*tracked_tokens['price']
+        tracked_tokens['price_change'] = tracked_tokens['price']/tracked_tokens['buy_price']
+        tracked_tokens['sell_tag'] = np.where((tracked_tokens['liq_req'] < tracked_tokens['liquidity']) &
+                                              ((tracked_tokens['price_change'] >= self.take_profit) |
+                                               (tracked_tokens['price_change'] <= self.stop_loss)), True, False)
+        return tracked_tokens
+
+    def sell_tokens(self, tracked_tokens):
+        if tracked_tokens[tracked_tokens['sell_tag']==True].empty:
+            print('No tokens to sell')
+            print(tracked_tokens[['address','price_change']])
+        for i, row in tracked_tokens[tracked_tokens['sell_tag']==True].iterrows():
+            print(dt.datetime.now(), 'Attempt to SELL: ', i, row['address'], 'X: ', row['price_change'])
+            result, txid = tx_procedure(wallet=wallet, asset_in=row['address'], asset_out=SOL_ca,
+                                        mode='sell', fee=self.priority_fee)
+            print('Result: ', result)
+            if result == {'Ok': None}:
+                print('Success SELL!', row['address'], txid)
+                self.update_db_on_sell(row['address'])
+                print('DB updated with sell data!')
+
+
+if __name__ == "__main__":
+
+    try:
+        oracle = SCOracle()
+        db_tokens = oracle.get_db_tokens()
+        wallet_tokens = oracle.get_wallet_tokens()
+        tracked_tokens = oracle.calculate_prices(db_tokens, wallet_tokens)
+        oracle.sell_tokens(tracked_tokens)
+    except Exception as e:
+        print(e)
