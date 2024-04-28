@@ -2,6 +2,7 @@ import sys
 sys.path.insert(1, './')
 from utils.common import *
 from utils.blockchain import *
+from tabulate import tabulate
 
 
 class SCOracle:
@@ -37,7 +38,9 @@ class SCOracle:
             db_tokens[['address','buy_price']],
             how='inner', left_on='token_address', right_on='address'
         )
-        ## TODO: Only trigger if tracked_tokens is not empty
+        if tracked_tokens.empty:
+            print('No tokens are tracked')
+            return tracked_tokens
         cur_prices = check_multi_price(tracked_tokens['token_address'].to_list())
         cur_prices = pd.DataFrame().from_dict(cur_prices,orient='index')
         cur_prices = cur_prices.reset_index().rename(columns={'index':'address'})
@@ -47,13 +50,15 @@ class SCOracle:
         tracked_tokens['sell_tag'] = np.where((tracked_tokens['liq_req'] < tracked_tokens['liquidity']) &
                                               ((tracked_tokens['price_change'] >= self.take_profit) |
                                                (tracked_tokens['price_change'] <= self.stop_loss)), True, False)
-        return tracked_tokens
+        print('price changes:')
+        print(tracked_tokens[['address','price_change']].to_markdown(headers='keys',tablefmt='psql'))
+        return tracked_tokens[tracked_tokens['sell_tag']==True]
 
-    def sell_tokens(self, tracked_tokens):
-        if tracked_tokens[tracked_tokens['sell_tag']==True].empty:
-            print('No tokens to sell')
-            print(tracked_tokens[['address','price_change']])
-        for i, row in tracked_tokens[tracked_tokens['sell_tag']==True].iterrows():
+    def sell_tokens(self, tokens_for_sale):
+        if tokens_for_sale.empty:
+            print('No tokens are ready to sell yet')
+            return None
+        for i, row in tokens_for_sale.iterrows():
             print(dt.datetime.now(), 'Attempt to SELL: ', i, row['address'], 'X: ', row['price_change'])
             result, txid = tx_procedure(wallet=wallet, asset_in=row['address'], asset_out=SOL_ca,
                                         mode='sell', fee=self.priority_fee)
@@ -62,6 +67,7 @@ class SCOracle:
                 print('Success SELL!', row['address'], txid)
                 self.update_db_on_sell(row['address'])
                 print('DB updated with sell data!')
+            return None
 
 
 if __name__ == "__main__":
@@ -70,7 +76,7 @@ if __name__ == "__main__":
         oracle = SCOracle()
         db_tokens = oracle.get_db_tokens()
         wallet_tokens = oracle.get_wallet_tokens()
-        tracked_tokens = oracle.calculate_prices(db_tokens, wallet_tokens)
-        oracle.sell_tokens(tracked_tokens)
+        tokens_for_sale = oracle.calculate_prices(db_tokens, wallet_tokens)
+        oracle.sell_tokens(tokens_for_sale)
     except Exception as e:
         print(e)
