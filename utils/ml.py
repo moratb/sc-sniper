@@ -3,6 +3,10 @@ import xgboost as xgb
 import pickle
 import ta
 
+from utils.logger import create_logger
+
+logger = create_logger()
+
 
 def get_static_data(token):
     with SQLiteDB('./dbs/calls.db') as conn:
@@ -17,11 +21,11 @@ def get_ochl_data(token, launch_time):
     while True:
         ochl_data = get_price_data(token, int(launch_time.timestamp()), int((launch_time + dt.timedelta(minutes=20)).timestamp()))
         if ochl_data.shape[0] == 0:
-            print('Incorrect Launch time')
+            logger.info('Incorrect Launch time')
             return None
         elif ochl_data.shape[0] < 21:
             diff = 21 - ochl_data.shape[0]
-            print('Too early. Waiting', diff, 'minutes')
+            logger.info('Too early. Waiting', diff, 'minutes')
             t.sleep(60*diff)
         return ochl_data
     

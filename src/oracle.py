@@ -53,7 +53,7 @@ class SCOracle:
                                               ((tracked_tokens['price_change'] >= self.take_profit) |
                                                (tracked_tokens['price_change'] <= self.stop_loss)), True, False)
         self.logger.info('price changes:')
-        print(tracked_tokens[['address','price_change','liquidity']].to_markdown(headers='keys',tablefmt='psql'))
+        self.logger.info(tracked_tokens[['address','price_change','liquidity']].to_markdown(headers='keys',tablefmt='psql'))
         return tracked_tokens[tracked_tokens['sell_tag']==True]
 
     def sell_tokens(self, tokens_for_sale):

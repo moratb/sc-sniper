@@ -16,6 +16,10 @@ import uuid
 from contextlib import suppress
 from dotenv import load_dotenv
 
+from utils.logger import create_logger
+
+logger = create_logger()
+
 load_dotenv()
 SOL_ca = 'So11111111111111111111111111111111111111112'
 USDC_ca = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
@@ -93,10 +97,10 @@ def get_quote(cur_in, cur_out, inamount):
     }
     response = requests.get(url, headers=headers, params=json_data)
     if response.status_code == 200:
-        print('Success Quote!')
+        logger.info('Success Quote!')
         return response.json()
     else:
-        print(response.status_code, response.json())
+        logger.error(response.status_code, response.json())
         return None
 
 
@@ -114,10 +118,10 @@ def get_tx(wallet, quote, fee_microlaports):
     }
     response = requests.post(url, headers=headers, json=json_data)
     if response.status_code == 200:
-        print('Success Txgen!')
+        logger.info('Success Txgen!')
         return response.json()
     else:
-        print(response.status_code, response.json())
+        logger.error(response.status_code, response.json())
         return None
 
 
@@ -130,7 +134,7 @@ def prepare_tx(wallet, asset_in=USDC_ca, asset_out=USDC_ca, amount=0, mode='sell
         tow = getSPLtokens(wallet)
         amount_owned = tow.loc[tow['token_address'] == asset_in, 'amount'].iloc[0]  ## selling all
         d = tow.loc[tow['token_address'] == asset_in, 'decimals'].iloc[0]
-        print('attempt to sell', int(amount_owned) / 10 ** int(d), 'of', asset_in)
+        logger.info('attempt to sell', int(amount_owned) / 10 ** int(d), 'of', asset_in)
         quote = get_quote(cur_in = asset_in, cur_out = asset_out, inamount = int(amount_owned))
 
     tx_data = get_tx(wallet = wallet, quote = quote, fee_microlaports = fee)
@@ -145,7 +149,7 @@ def sign_tx(tx_object, wallet):
     raw_tx = VersionedTransaction.from_bytes(tx_bytes)
     signature = wallet.sign_message(message.to_bytes_versioned(raw_tx.message))
     signed_tx = VersionedTransaction.populate(raw_tx.message, [signature])
-    print('Success sign!')
+    logger.info('Success sign!')
     return signed_tx
 
 
@@ -177,10 +181,10 @@ async def resender(encoded_tx, abort_signal):
     retry_id = 0
     while not abort_signal.is_set():
         try:
-            print('Attempt: ',retry_id := retry_id + 1)
+            logger.info('Attempt: ',retry_id := retry_id + 1)
             await manual_send(encoded_tx)
         except Exception as e:
-            print(f"Failed to resend transaction: {e}")
+            logger.error(f"Failed to resend transaction: {e}")
         await asyncio.sleep(2)
 
 
@@ -191,9 +195,9 @@ async def confirm_transaction(sca, tx_sig, lvbh, abort_signal):
             return tx_status
         except TransactionExpiredBlockheightExceededError as e:
             abort_signal.set()
-            print(f"Block height exceeded: {e}")
+            logger.info(f"Block height exceeded: {e}")
         except Exception as e:
-            print(f"Confirmation issue: {e}")
+            logger.info(f"Confirmation issue: {e}")
 
 
 async def check_transaction_status(sca, tx_sig, abort_signal):
@@ -203,13 +207,13 @@ async def check_transaction_status(sca, tx_sig, abort_signal):
             if tx_status.value[0]:
                 return tx_status
         except Exception as e:
-            print(f"Get signatures issue: {e}")
+            logger.error(f"Get signatures issue: {e}")
         await asyncio.sleep(2)
 
 
 async def txsender(tx_object):
-    print(dt.datetime.now(), 'attempting to send')
-    print('txid: ',tx_object['txid'],
+    logger.info(dt.datetime.now(), 'attempting to send')
+    logger.info('txid: ',tx_object['txid'],
           'fee: ',tx_object['tx_data']['prioritizationFeeLamports'],
           'lvbh: ',tx_object['lvbh'])
     encoded_tx = base64.b64encode(bytes(tx_object['signed_tx'])).decode('utf-8')
@@ -235,7 +239,7 @@ async def txsender(tx_object):
                     return tx_status['status']
 
     except Exception as e:
-        print(f"An error occurred: {e}")
+        logger.error(f"An error occurred: {e}")
 
     finally:
         abort_signal.set()  # Ensure all tasks are cancelled
@@ -244,7 +248,7 @@ async def txsender(tx_object):
             task.cancel()
             with suppress(asyncio.CancelledError):
                 await task 
-        print(confirmation_task.done(), resender_task.done(), status_check_task.done())
+        logger.info(confirmation_task.done(), resender_task.done(), status_check_task.done())
         await sca.close()
 
     return None
