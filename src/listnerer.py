@@ -96,13 +96,6 @@ class SCTelegramListener:
         messages = messages.drop(columns=['messages', 's_mm', 's_ma', 's_fa', 's_s', 'mcap', 'liq', 'text', 'new'])
         return messages
 
-    async def parse(self):
-        client = await self.start_telegram_client()
-        chat_id = await self.get_chat_id(client)
-        messages = await self.read_messages(chat_id)
-        parsed = self.parse_messages(messages)
-        return parsed
-
     def write_to_db(self, message):
         with SQLiteDB('dbs/calls.db') as conn:
             query = "SELECT DISTINCT address FROM calls"

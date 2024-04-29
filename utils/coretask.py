@@ -1,9 +1,12 @@
 from utils.common import *
 from utils.blockchain import *
+from utils.logger import create_logger
 from utils.ml import *
 
 USD_AMOUNT = 0.1
 PRIORITY_FEE = 5000
+
+logger = create_logger()
 
 def core_task(token, launch_time):
     ## PART 1 - GET STATIC DATA
@@ -15,7 +18,7 @@ def core_task(token, launch_time):
     ## PART 3 - PREPARE DATA 
     final_df = prepare_for_ml(static_data, ochl_data)
     if not isinstance(final_df, pd.DataFrame):
-        print('Test 1 not passed')
+        logger.info('Test 1 not passed')
         return None
 
     ## PART 4 - APPLY ML
@@ -23,15 +26,15 @@ def core_task(token, launch_time):
 
     if (decision1==1) & (decision2>5):
         while True:
-            print(dt.datetime.now(),' Attempt to BUY: ',token)
+            logger.info(dt.datetime.now(),' Attempt to BUY: ',token)
             ## PART 5 - BUY
             cur_price = check_multi_price([SOL_ca])
             SOL_AMOUNT = USD_AMOUNT / cur_price[SOL_ca]['price']
             result, txid = tx_procedure(wallet=wallet, asset_in=SOL_ca, asset_out=token,
                                         amount=SOL_AMOUNT, mode='buy', fee=PRIORITY_FEE)
-            print('Result: ', result, txid)
+            logger.info('Result: ', result, txid)
             if result == {'Ok': None}:
-                print('Success BUY', token, txid)
+                logger.info('Success BUY', token, txid)
                 buy_price = check_buy_price(txid, USD_AMOUNT)
                 ## PART 6 WRITE TO DB
                 with SQLiteDB('dbs/calls.db') as conn:
@@ -44,10 +47,10 @@ def core_task(token, launch_time):
                     WHERE address = "{token}"
                     """
                     conn.execute(update_statement)
-                print('DB updated with buy data!')
+                logger.info('DB updated with buy data!')
                 break
             else:
                 continue
     else:
-        print('Test 2 not passed', decision1, decision2)
+        logger.info('Test 2 not passed', decision1, decision2)
         return None
