@@ -62,7 +62,7 @@ class SCJobScheduler:
 
     def init_scheduler(self):
         self.scheduler = BackgroundScheduler(jobstores=self.jobstores, executors=self.executors,
-                                             job_defaults=self.job_defaults, timezone="UTC")
+                                             job_defaults=self.job_defaults, timezone=utc)
         return
 
 def dummy_func(token, launch_time):
