@@ -106,7 +106,7 @@ def get_quote(cur_in, cur_out, inamount):
 
 @retry(max_attempts=30, retry_delay=2)
 def get_tx(wallet, quote, fee_microlaports):
-    print('fee will be: ', fee_microlaports)
+    logger.info('fee will be: ', fee_microlaports)
     url = 'https://quote-api.jup.ag/v6/swap'
     headers = {'Content-Type': 'application/json'}
     json_data = {
@@ -127,7 +127,7 @@ def get_tx(wallet, quote, fee_microlaports):
 
 def prepare_tx(wallet, asset_in=USDC_ca, asset_out=USDC_ca, amount=0, mode='sell', fee=10000):
     if mode == 'buy':
-        print('attempt to buy ', asset_out, 'for ', amount,  asset_in)
+        logger.info('attempt to buy ', asset_out, 'for ', amount,  asset_in)
         d = getDecimals(asset_in)
         quote = get_quote(cur_in = asset_in, cur_out = asset_out, inamount = int(amount * 10 ** d))
     elif mode == 'sell':
@@ -235,7 +235,7 @@ async def txsender(tx_object):
             if res:
                 tx_status = json.loads(res.value[0].to_json())
                 if tx_status['confirmationStatus'] in ('confirmed','finalized'):
-                    print(dt.datetime.now(), 'Transaction sent!')
+                    logger.info(dt.datetime.now(), 'Transaction sent!')
                     return tx_status['status']
 
     except Exception as e:
