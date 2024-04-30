@@ -1,3 +1,4 @@
+import time
 from time import sleep
 from src.oracle import SCOracle
 from src.scheduler import SCJobScheduler
@@ -23,8 +24,6 @@ async def messages_listening():
         parsed = handler.parse_messages(msg)
         handler.write_to_db(parsed)
 
-        logger.info('Written new message to DataBase')
-
     await client.run_until_disconnected()
 
 
@@ -35,10 +34,12 @@ def messages_listening_thread():
 def jobs_scheduling_thread():
     scheduler = SCJobScheduler()
     scheduler.init_scheduler()
-    scheduler.schedule_jobs()
     scheduler.scheduler.start()
     while True:
-        pass  # TODO maybe think about smth better to keep thread alive
+        time.sleep(60)
+        scheduler.schedule_jobs()
+        pass
+
 
 
 def oracle_scheduling_thread():

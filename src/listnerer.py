@@ -4,6 +4,8 @@ from utils.common import *
 from dotenv import load_dotenv
 import logging
 
+from utils.logger import create_logger
+
 logging.basicConfig()
 logging.getLogger('apscheduler').setLevel(logging.DEBUG)
 
@@ -17,6 +19,7 @@ class SCTelegramListener:
         self.pass2fa = os.getenv('telegram_pass2fa_2')
         self.chat_name = 'Solana New Liquidity Pools'
         self.client = self.init_client()
+        self.logger = create_logger()
 
     def init_client(self):
         return TelegramClient(session=None,
@@ -102,3 +105,5 @@ class SCTelegramListener:
             tracked_a = pd.read_sql_query(query, conn)
             message_clean = message.loc[~message['address'].isin(tracked_a['address'].unique())]
             message_clean.to_sql('calls', conn, if_exists='append', index=False)
+            self.logger.info('Written new message to DataBase')
+            return

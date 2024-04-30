@@ -1,3 +1,5 @@
+import time
+
 from pytz import utc
 import pandas as pd
 
@@ -67,7 +69,6 @@ class SCJobScheduler:
                                              job_defaults=self.job_defaults, timezone=utc)
         return
 
-def dummy_func(token, launch_time):
-    print(token, launch_time)
-    print('dummy func triggered')
-    return
+    def ping(self):
+        return self.scheduler.wakeup()
+
