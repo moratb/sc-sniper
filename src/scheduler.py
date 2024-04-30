@@ -26,24 +26,26 @@ class SCJobScheduler:
         self.logger = create_logger()
 
 
-    def update_launch_date(self, index, status, time):
+    def update_launch_date(self, token, status, time):
         ltime = f'"{time}"' if time else "NULL"
         with SQLiteDB('dbs/calls.db') as conn:
             update_statement = f"""
             UPDATE calls
             SET launched = {status}, launch_time = {ltime}
-            WHERE id = {index}
+            WHERE address = "{token}"
             """
             conn.execute(update_statement)
 
     def schedule_jobs(self):
         with SQLiteDB('dbs/calls.db') as conn:
-            query = "SELECT * FROM calls "  # WHERE launched is NULL
+            query = "SELECT * FROM calls WHERE launched is NULL" 
             df = pd.read_sql_query(query, conn)
-            df = df.loc[dt.datetime.now() > pd.to_datetime(df['expected_launch_time_ts']) + dt.timedelta(minutes=5)]
-            for i, row in df[-2:].iterrows():
+            df['elt'] = pd.to_datetime(df['expected_launch_time_ts']) 
+            now = pd.Timestamp.now(tz='UTC').tz_localize(None)
+            df = df.loc[now > ( df['elt'] + dt.timedelta(minutes=5) ) ]
+            for i, row in df.iterrows():
                 self.logger.info('trying: ', i, row['address'])
-                elt = int(dt.datetime.strptime(row['expected_launch_time_ts'], '%Y-%m-%d %H:%M:%S').timestamp())
+                elt = int(row['elt'].timestamp())
                 tmp_df = get_price_data(row['address'], elt - 60 * 60, elt + 60 * 60 * 25)
                 if not tmp_df.empty:
                     launched = True
@@ -55,10 +57,10 @@ class SCJobScheduler:
                                            jobstore='default',
                                            kwargs={'token': row['address'], 'launch_time': launch_time})
                 else:
-                    self.logger.warn('Task Not Launched')
+                    self.logger.warn('Task Not Launched') ## TODO: DELETE INSTEAD OF UPDATE
                     launched = False
                     launch_time = None
-                self.update_launch_date(row['id'], launched, launch_time)
+                self.update_launch_date(row['address'], launched, launch_time)
 
     def init_scheduler(self):
         self.scheduler = BackgroundScheduler(jobstores=self.jobstores, executors=self.executors,
