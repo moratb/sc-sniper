@@ -50,7 +50,7 @@ class SCJobScheduler:
             for i, row in df.iterrows():
                 self.logger.info(f"trying: {i} {row['address']}")
                 elt = int(row['elt'].timestamp())
-                self.logger.info(f'testing get price data from {elt - 60 * 60} to {elt + 60 * 60 * 25}')
+                self.logger.info(f'getting price data from {elt - 60 * 60} to {elt + 60 * 60 * 25}')
                 tmp_df = get_price_data(row['address'], elt - 60 * 60, elt + 60 * 60 * 25)
                 if not tmp_df.empty:
                     launched = True

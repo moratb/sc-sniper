@@ -20,6 +20,7 @@ with SQLiteDB('dbs/calls.db') as conn:
         liq_num INTEGER,
         launched BOOL,
         launch_time TEXT,
+        decision TEXT,
         buy BOOL,
         buy_time TEXT,
         buy_price REAL
