@@ -61,12 +61,12 @@ class SCOracle:
             self.logger.warn('No tokens are ready to sell yet')
             return None
         for i, row in tokens_for_sale.iterrows():
-            self.logger.info(dt.datetime.now(), 'Attempt to SELL: ', i, row['address'], 'X: ', row['price_change'])
+            self.logger.info(f"Attempt to SELL: {i} {row['address']} at X: {row['price_change']}" )
             result, txid = tx_procedure(wallet=wallet, asset_in=row['address'], asset_out=SOL_ca,
                                         mode='sell', fee=self.priority_fee)
-            self.logger.info('Result: ', result)
+            self.logger.info(f'Result: {result}')
             if result == {'Ok': None}:
-                self.logger.info('Success SELL!', row['address'], txid)
+                self.logger.info(f"Success SELL! {row['address']} {txid}")
                 self.update_db_on_sell(row['address'])
                 self.logger.info('DB updated with sell data!')
             return None

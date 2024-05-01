@@ -19,14 +19,16 @@ def get_static_data(token):
 
 def get_ochl_data(token, launch_time):
     while True:
-        ochl_data = get_price_data(token, int(launch_time.timestamp()), int((launch_time + dt.timedelta(minutes=20)).timestamp()))
+        ochl_data = get_price_data(token, 
+                                   int(launch_time.timestamp()), 
+                                   int((launch_time + dt.timedelta(minutes=20)).timestamp()))
         if ochl_data.shape[0] == 0:
-            logger.info('Incorrect Launch time')
+            logger.info(f"OCHL data is empty for  {launch_time}")
             return None
         elif ochl_data.shape[0] < 21:
             diff = 21 - ochl_data.shape[0]
-            logger.info('Too early. Waiting', diff, 'minutes')
-            t.sleep(60*diff)
+            logger.info(f"OCHL data is too small for {launch_time}, {diff} is difference")
+            return None
         return ochl_data
     
 

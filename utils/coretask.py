@@ -29,15 +29,15 @@ def core_task(token, launch_time):
 
     if (decision1==1) & (decision2>5):
         while True:
-            logger.info(dt.datetime.now(),' Attempt to BUY: ',token)
+            logger.info(f'Attempt to BUY: {token}')
             ## PART 5 - BUY
             cur_price = check_multi_price([SOL_ca])
             SOL_AMOUNT = USD_AMOUNT / cur_price[SOL_ca]['price']
             result, txid = tx_procedure(wallet=wallet, asset_in=SOL_ca, asset_out=token,
                                         amount=SOL_AMOUNT, mode='buy', fee=PRIORITY_FEE)
-            logger.info('Result: ', result, txid)
+            logger.info(f"Result: {result} {txid}")
             if result == {'Ok': None}:
-                logger.info('Success BUY', token, txid)
+                logger.info(f"Success BUY {token} {txid}")
                 buy_price = check_buy_price(txid, USD_AMOUNT)
                 ## PART 6 WRITE TO DB
                 with SQLiteDB('dbs/calls.db') as conn:
@@ -55,5 +55,5 @@ def core_task(token, launch_time):
             else:
                 continue
     else:
-        logger.info('Test 2 not passed', decision1, decision2)
+        logger.info(f"Test 2 not passed {decision1} {decision2}")
         return None

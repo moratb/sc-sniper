@@ -46,11 +46,12 @@ class SCJobScheduler:
             df['elt'] = pd.to_datetime(df['expected_launch_time_ts']) 
             now = pd.Timestamp.now(tz='UTC').tz_localize(None)
             df = df.loc[now > ( df['elt'] + dt.timedelta(minutes=5) ) ]
+            ## TODO: maybe add log here to track that scheduler is working
             for i, row in df.iterrows():
-                self.logger.info('trying: ', i, row['address'])
+                self.logger.info(f"trying: {i} {row['address']}")
                 elt = int(row['elt'].timestamp())
-                self.logger.warn('testing get price data from',elt - 60 * 60, 'to', elt + 60 * 60 * 25)
-                tmp_df = get_price_data(row['address'], str(elt - 60 * 60), str(elt + 60 * 60 * 25))
+                self.logger.info(f'testing get price data from {elt - 60 * 60} to {elt + 60 * 60 * 25}')
+                tmp_df = get_price_data(row['address'], elt - 60 * 60, elt + 60 * 60 * 25)
                 if not tmp_df.empty:
                     launched = True
                     launch_time = dt.datetime.fromtimestamp(tmp_df['unixTime'].min(), tz=dt.timezone.utc)

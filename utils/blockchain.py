@@ -100,13 +100,13 @@ def get_quote(cur_in, cur_out, inamount):
         logger.info('Success Quote!')
         return response.json()
     else:
-        logger.error(response.status_code, response.json())
+        logger.error(f"{response.status_code} {response.json()}")
         return None
 
 
 @retry(max_attempts=30, retry_delay=2)
 def get_tx(wallet, quote, fee_microlaports):
-    logger.info('fee will be: ', fee_microlaports)
+    logger.info(f'fee will be: {fee_microlaports}')
     url = 'https://quote-api.jup.ag/v6/swap'
     headers = {'Content-Type': 'application/json'}
     json_data = {
@@ -121,20 +121,20 @@ def get_tx(wallet, quote, fee_microlaports):
         logger.info('Success Txgen!')
         return response.json()
     else:
-        logger.error(response.status_code, response.json())
+        logger.error(f"{response.status_code} {response.json()}")
         return None
 
 
 def prepare_tx(wallet, asset_in=USDC_ca, asset_out=USDC_ca, amount=0, mode='sell', fee=10000):
     if mode == 'buy':
-        logger.info('attempt to buy ', asset_out, 'for ', amount,  asset_in)
+        logger.info(f'attempt to buy {asset_out} for {amount} {asset_in}')
         d = getDecimals(asset_in)
         quote = get_quote(cur_in = asset_in, cur_out = asset_out, inamount = int(amount * 10 ** d))
     elif mode == 'sell':
         tow = getSPLtokens(wallet)
         amount_owned = tow.loc[tow['token_address'] == asset_in, 'amount'].iloc[0]  ## selling all
         d = tow.loc[tow['token_address'] == asset_in, 'decimals'].iloc[0]
-        logger.info('attempt to sell', int(amount_owned) / 10 ** int(d), 'of', asset_in)
+        logger.info(f'attempt to sell {int(amount_owned) / 10 ** int(d)} of {asset_in}')
         quote = get_quote(cur_in = asset_in, cur_out = asset_out, inamount = int(amount_owned))
 
     tx_data = get_tx(wallet = wallet, quote = quote, fee_microlaports = fee)
@@ -181,7 +181,8 @@ async def resender(encoded_tx, abort_signal):
     retry_id = 0
     while not abort_signal.is_set():
         try:
-            logger.info('Attempt: ',retry_id := retry_id + 1)
+            retry_id += 1
+            logger.info(f'Attempt: {retry_id}')
             await manual_send(encoded_tx)
         except Exception as e:
             logger.error(f"Failed to resend transaction: {e}")
@@ -212,10 +213,10 @@ async def check_transaction_status(sca, tx_sig, abort_signal):
 
 
 async def txsender(tx_object):
-    logger.info(dt.datetime.now(), 'attempting to send')
-    logger.info('txid: ',tx_object['txid'],
-          'fee: ',tx_object['tx_data']['prioritizationFeeLamports'],
-          'lvbh: ',tx_object['lvbh'])
+    logger.info('attempting to send tx: ')
+    logger.info(f"""txid: {tx_object['txid']},
+                  fee: {tx_object['tx_data']['prioritizationFeeLamports']},
+                  lvbh: {tx_object['lvbh']}""")
     encoded_tx = base64.b64encode(bytes(tx_object['signed_tx'])).decode('utf-8')
     tx_sig = tx_object['txid']
     lvbh = tx_object['lvbh']
@@ -235,7 +236,7 @@ async def txsender(tx_object):
             if res:
                 tx_status = json.loads(res.value[0].to_json())
                 if tx_status['confirmationStatus'] in ('confirmed','finalized'):
-                    logger.info(dt.datetime.now(), 'Transaction sent!')
+                    logger.info('Transaction sent!')
                     return tx_status['status']
 
     except Exception as e:
@@ -248,7 +249,7 @@ async def txsender(tx_object):
             task.cancel()
             with suppress(asyncio.CancelledError):
                 await task 
-        logger.info(confirmation_task.done(), resender_task.done(), status_check_task.done())
+        logger.info(f"{confirmation_task.done()}, {resender_task.done()}, {status_check_task.done()}")
         await sca.close()
 
     return None
