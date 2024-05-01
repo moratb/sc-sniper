@@ -1,11 +1,14 @@
+import sys
+sys.path.insert(1, './')
+
 import pandas as pd
 from telethon import TelegramClient
+
 from utils.common import *
-from dotenv import load_dotenv
-import logging
-
 from utils.logger import create_logger
+from dotenv import load_dotenv
 
+import logging
 logging.basicConfig()
 logging.getLogger('apscheduler').setLevel(logging.DEBUG)
 

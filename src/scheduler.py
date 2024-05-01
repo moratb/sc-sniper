@@ -1,4 +1,5 @@
-import time
+import sys
+sys.path.insert(1, './')
 
 from pytz import utc
 import pandas as pd
@@ -48,7 +49,8 @@ class SCJobScheduler:
             for i, row in df.iterrows():
                 self.logger.info('trying: ', i, row['address'])
                 elt = int(row['elt'].timestamp())
-                tmp_df = get_price_data(row['address'], elt - 60 * 60, elt + 60 * 60 * 25)
+                self.logger.warn('testing get price data from',elt - 60 * 60, 'to', elt + 60 * 60 * 25)
+                tmp_df = get_price_data(row['address'], str(elt - 60 * 60), str(elt + 60 * 60 * 25))
                 if not tmp_df.empty:
                     launched = True
                     launch_time = dt.datetime.fromtimestamp(tmp_df['unixTime'].min(), tz=dt.timezone.utc)

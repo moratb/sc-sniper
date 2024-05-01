@@ -1,5 +1,4 @@
-import time
-from time import sleep
+import time as t
 from src.oracle import SCOracle
 from src.scheduler import SCJobScheduler
 from src.listnerer import SCTelegramListener
@@ -36,7 +35,7 @@ def jobs_scheduling_thread():
     scheduler.init_scheduler()
     scheduler.scheduler.start()
     while True:
-        time.sleep(60)
+        t.sleep(120)
         scheduler.schedule_jobs()
         pass
 
@@ -52,7 +51,7 @@ def oracle_scheduling_thread():
             oracle.sell_tokens(tokens_for_sale)
         except Exception as e:
             print(e)
-        sleep(60)  # TODO sleep timer or else?
+        t.sleep(60)
 
 
 if __name__ == "__main__":

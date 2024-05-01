@@ -1,8 +1,9 @@
 import sys
+sys.path.insert(1, './')
 from utils.common import *
 
 # Connect to a database (or create one if it doesn't exist)
-with SQLiteDB('dbs/calls2.db') as conn:
+with SQLiteDB('dbs/calls.db') as conn:
     create_table_query = """
     CREATE TABLE IF NOT EXISTS calls (
         id INTEGER PRIMARY KEY,

@@ -14,6 +14,9 @@ def core_task(token, launch_time):
 
     ## PART 2 - GET OCHL DATA AND PREPARE
     ochl_data = get_ochl_data(token, launch_time)
+    if not isinstance(final_df, pd.DataFrame):
+        logger.error('Token not launched')
+        return None
 
     ## PART 3 - PREPARE DATA 
     final_df = prepare_for_ml(static_data, ochl_data)
