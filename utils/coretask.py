@@ -31,7 +31,7 @@ def buy_write(token, buy_price):
     logger.info('DB updated with buy data!')
 
 def core_task(token, launch_time):
-    logger.info(f'Starting analyzing {token}')
+    #logger.info(f'Starting analyzing {token} at {launch_time} would be {int(launch_time.timestamp())}')
     ## PART 1 - GET STATIC DATA
     static_data = get_static_data(token)
 

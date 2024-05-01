@@ -2,7 +2,7 @@ from utils.common import *
 import xgboost as xgb
 import pickle
 import ta
-
+from tabulate import tabulate
 from utils.logger import create_logger
 
 logger = create_logger()
@@ -21,7 +21,7 @@ def get_ochl_data(token, launch_time):
     while True:
         ochl_data = get_price_data(token, 
                                    int(launch_time.timestamp()), 
-                                   int((launch_time + dt.timedelta(minutes=20)).timestamp()))
+                                   int((launch_time + dt.timedelta(minutes=21)).timestamp()))
         if ochl_data.shape[0] == 0:
             logger.info(f"OCHL data is empty for  {launch_time}")
             return None
@@ -84,6 +84,7 @@ def prepare_for_ml(static_data, ochl_data):
 
     ## cleanup
     final_df = prepared_data.loc[(prepared_data['time']<=20)]
+    #logger.info(final_df[['address','normal_c','time','unixTime','target_check']].to_markdown(headers='keys',tablefmt='psql'))
     if final_df['target_check'].min() == 0:
         return None
     final_df = final_df.drop(columns=['type','h','o','l','c','unixTime','v','o_first', 'c_first', 'h_first', 'l_first','target_check'])

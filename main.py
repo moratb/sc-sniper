@@ -57,6 +57,7 @@ def oracle_scheduling_thread():
 
 
 if __name__ == "__main__":
+    ## TODO: SPLIT ORACLE INTO SEPARATE FILE
     t1 = threading.Thread(target=messages_listening_thread)
     t2 = Process(target=jobs_scheduling_thread)  # Using process poll instead of thread to match executor config
     t3 = threading.Thread(target=oracle_scheduling_thread)
