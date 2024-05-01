@@ -8,6 +8,7 @@ from utils.common import *
 from utils.logger import create_logger
 from dotenv import load_dotenv
 
+import asyncio
 import logging
 logging.basicConfig()
 logging.getLogger('apscheduler').setLevel(logging.DEBUG)
@@ -39,6 +40,11 @@ class SCTelegramListener:
         async for dialog in client.iter_dialogs():
             res[dialog.name] = dialog.id
         return res.get(self.chat_name)
+    
+    async def catch_up_periodically(self):
+        while True:
+            await self.client.catch_up()
+            await asyncio.sleep(300) 
 
     def read_messages(self,messages):
         message = pd.DataFrame({'messages': [messages]})

@@ -23,6 +23,8 @@ async def messages_listening():
         parsed = handler.parse_messages(msg)
         handler.write_to_db(parsed)
 
+    catch_up_task = asyncio.create_task(handler.catch_up_periodically())
+
     await client.run_until_disconnected()
 
 

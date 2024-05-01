@@ -62,7 +62,7 @@ class SCJobScheduler:
                                            jobstore='default',
                                            kwargs={'token': row['address'], 'launch_time': launch_time})
                 else:
-                    self.logger.warn('Task Not Launched') ## TODO: DELETE INSTEAD OF UPDATE
+                    self.logger.warn('Token Seems Not Launched') ## TODO: DELETE INSTEAD OF UPDATE
                     launched = False
                     launch_time = None
                 self.update_launch_date(row['address'], launched, launch_time)
