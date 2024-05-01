@@ -21,7 +21,7 @@ def get_ochl_data(token, launch_time):
     while True:
         ochl_data = get_price_data(token, 
                                    int(launch_time.timestamp()), 
-                                   int((launch_time + dt.timedelta(minutes=21)).timestamp()))
+                                   int((launch_time + dt.timedelta(minutes=20)).timestamp()))
         if ochl_data.shape[0] == 0:
             logger.info(f"OCHL data is empty for  {launch_time}")
             return None

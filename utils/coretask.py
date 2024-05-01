@@ -69,6 +69,6 @@ def core_task(token, launch_time):
             else:
                 continue
     else:
-        decision_write(token, f"Test 2 not passed {decision1} {decision2}")
-        logger.info(f"Test 2 not passed {decision1} {decision2}")
+        decision_write(token, f"Test 2 not passed d1: {decision1}, d2: {round(decision2),2}")
+        logger.info(f"Test 2 not passed d1: {decision1}, d2: {round(decision2,2)}")
         return None

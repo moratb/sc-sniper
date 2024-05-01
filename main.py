@@ -1,4 +1,5 @@
 import time as t
+import sys
 from src.oracle import SCOracle
 from src.scheduler import SCJobScheduler
 from src.listnerer import SCTelegramListener
@@ -57,10 +58,22 @@ def oracle_scheduling_thread():
 
 
 if __name__ == "__main__":
-    ## TODO: SPLIT ORACLE INTO SEPARATE FILE
-    t1 = threading.Thread(target=messages_listening_thread)
-    t2 = Process(target=jobs_scheduling_thread)  # Using process poll instead of thread to match executor config
-    t3 = threading.Thread(target=oracle_scheduling_thread)
-    t1.start()
-    t2.start()
-    t3.start()
+    mode = sys.argv[1]
+
+    if mode == "ls":
+        t1 = threading.Thread(target=messages_listening_thread)
+        t2 = Process(target=jobs_scheduling_thread)
+        t1.start()
+        t2.start()
+
+    elif mode == "oracle":
+        t3 = threading.Thread(target=oracle_scheduling_thread)
+        t3.start()
+    
+    else:
+        t1 = threading.Thread(target=messages_listening_thread)
+        t2 = Process(target=jobs_scheduling_thread)
+        t3 = threading.Thread(target=oracle_scheduling_thread)
+        t1.start()
+        t2.start()
+        t3.start()

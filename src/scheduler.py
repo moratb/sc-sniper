@@ -57,7 +57,7 @@ class SCJobScheduler:
                     launch_time = dt.datetime.fromtimestamp(tmp_df['unixTime'].min(), tz=dt.timezone.utc)
                     self.scheduler.add_job(func=core_task,
                                            trigger='date',
-                                           run_date=str(launch_time + dt.timedelta(minutes=20)),
+                                           run_date=str(launch_time + dt.timedelta(minutes=21)),
                                            id=str(row['id']),
                                            jobstore='default',
                                            kwargs={'token': row['address'], 'launch_time': launch_time})
