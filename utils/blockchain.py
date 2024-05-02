@@ -85,9 +85,9 @@ def getSPLtokens(wallet):
     return splt_df
 
 
-@retry(max_attempts=30, retry_delay=2)
+@retry(max_attempts=10, retry_delay=2)
 def get_quote(cur_in, cur_out, inamount):
-    url = 'https://quote-api.jup.ag/v6/quote'
+    url = 'https://t0-quote-api.jup.ag/quote' #'https://quote-api.jup.ag/v6/quote'
     headers = {'Content-Type': 'application/json'}
     json_data = {
         'amount': inamount,
@@ -101,13 +101,13 @@ def get_quote(cur_in, cur_out, inamount):
         return response.json()
     else:
         logger.error(f"{response.status_code} {response.json()}")
-        return None
+        response.raise_for_status()
 
 
-@retry(max_attempts=30, retry_delay=2)
+@retry(max_attempts=10, retry_delay=2)
 def get_tx(wallet, quote, fee_microlaports):
     logger.info(f'fee will be: {fee_microlaports}')
-    url = 'https://quote-api.jup.ag/v6/swap'
+    url = 'https://t0-quote-api.jup.ag/swap' #'https://quote-api.jup.ag/v6/swap'
     headers = {'Content-Type': 'application/json'}
     json_data = {
         'quoteResponse': quote,
@@ -122,7 +122,7 @@ def get_tx(wallet, quote, fee_microlaports):
         return response.json()
     else:
         logger.error(f"{response.status_code} {response.json()}")
-        return None
+        response.raise_for_status()
 
 
 def prepare_tx(wallet, asset_in=USDC_ca, asset_out=USDC_ca, amount=0, mode='sell', fee=10000):

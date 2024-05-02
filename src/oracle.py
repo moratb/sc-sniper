@@ -10,7 +10,7 @@ class SCOracle:
 
     def __init__(self):
         self.take_profit = 2
-        self.stop_loss = 0.9
+        self.stop_loss = 0.8
         self.priority_fee = 5000
         self.logger = create_logger()
 

@@ -70,7 +70,7 @@ if __name__ == "__main__":
         t3 = threading.Thread(target=oracle_scheduling_thread)
         t3.start()
     
-    else:
+    elif mode == 'full':
         t1 = threading.Thread(target=messages_listening_thread)
         t2 = Process(target=jobs_scheduling_thread)
         t3 = threading.Thread(target=oracle_scheduling_thread)

@@ -31,7 +31,7 @@ def buy_write(token, buy_price):
     logger.info('DB updated with buy data!')
 
 def core_task(token, launch_time):
-    #logger.info(f'Starting analyzing {token} at {launch_time} would be {int(launch_time.timestamp())}')
+    logger.info(f'Starting analyzing {token} at {launch_time} would be {int(launch_time.timestamp())}')
     ## PART 1 - GET STATIC DATA
     static_data = get_static_data(token)
 
@@ -52,6 +52,7 @@ def core_task(token, launch_time):
     decision1, decision2 = make_predictions(final_df)
 
     if (decision1==1) & (decision2>5):
+        decision_write(token, f"BUY! d1: {decision1}, d2: {round(decision2,2)}")
         while True:
             logger.info(f'Attempt to BUY: {token}')
             ## PART 5 - BUY
@@ -69,6 +70,6 @@ def core_task(token, launch_time):
             else:
                 continue
     else:
-        decision_write(token, f"Test 2 not passed d1: {decision1}, d2: {round(decision2),2}")
+        decision_write(token, f"Test 2 not passed d1: {decision1}, d2: {round(decision2,2)}")
         logger.info(f"Test 2 not passed d1: {decision1}, d2: {round(decision2,2)}")
         return None
