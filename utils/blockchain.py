@@ -199,6 +199,7 @@ async def confirm_transaction(sca, tx_sig, lvbh, abort_signal):
             logger.info(f"Block height exceeded: {e}")
         except Exception as e:
             logger.info(f"Confirmation issue: {e}")
+            return None
 
 
 async def check_transaction_status(sca, tx_sig, abort_signal):
@@ -209,6 +210,7 @@ async def check_transaction_status(sca, tx_sig, abort_signal):
                 return tx_status
         except Exception as e:
             logger.error(f"Get signatures issue: {e}")
+            return None
         await asyncio.sleep(2)
 
 
