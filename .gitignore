@@ -1,5 +1,6 @@
 .env
 scbot.conf
+helpscripts.sh
 thread_async_test.py
 /dbs/
 /utils/__pycache__

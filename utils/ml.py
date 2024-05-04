@@ -38,7 +38,7 @@ def prepare_for_ml(static_data, ochl_data):
 
     ## adjustments
     prepared_data['v_usd'] = prepared_data['v']*prepared_data['c']
-    prepared_data['time'] = (prepared_data['unixTime'] - prepared_data.groupby('address')['unixTime'].transform(min))/60
+    prepared_data['time'] = (prepared_data['unixTime'] - prepared_data.groupby('address')['unixTime'].transform('min'))/60
     prepared_data = pd.merge(prepared_data, 
                         prepared_data.drop_duplicates(subset='address',keep='first')[['address','o','c','h','l']],
                         on='address', how='left', suffixes=['','_first'])

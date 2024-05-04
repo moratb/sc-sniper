@@ -2,8 +2,9 @@ import sys
 sys.path.insert(1, './')
 
 import pandas as pd
-from telethon import TelegramClient
+pd.set_option("future.no_silent_downcasting", True)
 
+from telethon import TelegramClient
 from utils.common import *
 from utils.logger import create_logger
 from dotenv import load_dotenv
