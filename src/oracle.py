@@ -9,23 +9,27 @@ from utils.logger import create_logger
 class SCOracle:
 
     def __init__(self):
-        self.take_profit = 2
-        self.stop_loss = 0.8
-        self.priority_fee = 5000
+        self.take_profit = float(os.getenv('take_profit'))
+        self.stop_loss = float(os.getenv('stop_loss'))
+        self.priority_fee = int(os.getenv('PRIORITY_FEE'))
         self.logger = create_logger()
 
 
     def get_db_tokens(self):
         with SQLiteDB('dbs/calls.db') as conn:
-            query = "SELECT *  FROM calls WHERE buy = 1"
+            query = "SELECT *  FROM calls WHERE buy = 1 AND sell is NULL"
             db_tokens = pd.read_sql_query(query, conn)
         return db_tokens
     
-    def update_db_on_sell(self, token):
+    def update_db_on_sell(self, token, sell_price, sol_gain):
         with SQLiteDB('dbs/calls.db') as conn:
             update_statement = f"""
             UPDATE calls
-            SET buy = {False}
+            SET
+                sell = {True},
+                sell_time = "{dt.datetime.now(dt.timezone.utc).strftime('%Y-%m-%d %H:%M:%S')}",
+                sell_price = {sell_price},
+                sell_sol = {sol_gain}
             WHERE address = "{token}"
             """
             conn.execute(update_statement)
@@ -67,6 +71,7 @@ class SCOracle:
             self.logger.info(f'Result: {result}')
             if result == {'Ok': None}:
                 self.logger.info(f"Success SELL! {row['address']} {txid}")
-                self.update_db_on_sell(row['address'])
+                sell_price, sol_gain = check_tx_price_amount(txid)
+                self.update_db_on_sell(row['address'], sell_price, sol_gain)
                 self.logger.info('DB updated with sell data!')
             return None

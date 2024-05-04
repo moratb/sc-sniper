@@ -23,7 +23,12 @@ with SQLiteDB('dbs/calls.db') as conn:
         decision TEXT,
         buy BOOL,
         buy_time TEXT,
-        buy_price REAL
+        buy_price REAL,
+        buy_sol REAL,
+        sell BOOL,
+        sell_time TEXT,
+        sell_price REAL,
+        sell_sol REAL   
     )
     """
     conn.execute(create_table_query)

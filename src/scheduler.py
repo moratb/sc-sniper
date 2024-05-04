@@ -19,7 +19,7 @@ class SCJobScheduler:
         self.jobstores = {'default': SQLAlchemyJobStore(url='sqlite:///dbs/jobs.sqlite')
                           }
         self.executors = {
-            'default': {'type': 'threadpool', 'max_workers': 5}
+            'default': {'type': 'processpool', 'max_workers': 5}
         }
         self.job_defaults = {
             'coalesce': False,

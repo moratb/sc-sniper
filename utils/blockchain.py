@@ -14,22 +14,17 @@ import json
 import base64
 import uuid
 from contextlib import suppress
-from dotenv import load_dotenv
-
 from utils.logger import create_logger
 
 logger = create_logger()
 
-load_dotenv()
-SOL_ca = 'So11111111111111111111111111111111111111112'
-USDC_ca = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
-USDT_ca = "Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB"
-
+SOL_ca = os.getenv('SOL_ca')
+USDC_ca = os.getenv('USDC_ca')
+USDT_ca = os.getenv('USDT_ca')
 PRIVATE_KEY = os.getenv('wallet_pk')
-
-
 solana_client = Client(os.getenv('RPC'))
 wallet = Keypair.from_base58_string(PRIVATE_KEY)
+slippage = int(os.getenv('slippage'))
 
 
 @retry(max_attempts=5, retry_delay=1)
@@ -54,9 +49,19 @@ def getDecimals(token):
 
 
 @retry(max_attempts=5, retry_delay=2)
-def check_buy_price(tx, usd_in):
+def check_tx_price_amount(tx):
     tx_data = checkTransaction(tx)
     tx_json = json.loads(tx_data.to_json())['result']
+
+    ##SOL change
+    ak = tx_json['transaction']['message']['accountKeys']
+    i = ak.index(str(wallet.pubkey()))
+    presol = tx_json['meta']['preBalances'][i]
+    postsol = tx_json['meta']['postBalances'][i]
+    fee = tx_json['meta']['fee']
+    sol_change = (postsol - (presol - fee)) / 10**9
+
+    ##TOKEN changes
     balances_pre = pd.DataFrame(tx_json['meta']['preTokenBalances'])
     balances_pre['uiAmount'] =balances_pre['uiTokenAmount'].apply(lambda x:x['uiAmount'])
     balances_post = pd.DataFrame(tx_json['meta']['postTokenBalances'])
@@ -67,8 +72,13 @@ def check_buy_price(tx, usd_in):
             suffixes=['_pre','_post'],how='outer').fillna(0)
     comb['change'] = comb['uiAmount_post'] - comb['uiAmount_pre']
     comb[(comb['owner']==str(wallet.pubkey())) & (comb['change']>0)]['change']
-    out_amount = comb[(comb['owner']==str(wallet.pubkey())) & (comb['change']>0)]['change'].iloc[0]
-    return usd_in/out_amount
+    out_amount = comb[(comb['owner']==str(wallet.pubkey())) & (np.abs(comb['change'])>0)]['change'].iloc[0]
+    
+    ## get approx usd price
+    cur_price = check_multi_price([SOL_ca])
+    sol_price = cur_price[SOL_ca]['price']
+    
+    return np.abs( (sol_change * sol_price) / out_amount ), sol_change
 
 
 @retry()
@@ -93,7 +103,7 @@ def get_quote(cur_in, cur_out, inamount):
         'amount': inamount,
         'inputMint': cur_in,
         'outputMint': cur_out,
-        'slippageBps':500
+        'slippageBps':slippage
     }
     response = requests.get(url, headers=headers, params=json_data)
     if response.status_code == 200:
@@ -192,8 +202,8 @@ async def resender(encoded_tx, abort_signal):
 async def confirm_transaction(sca, tx_sig, lvbh, abort_signal):
     while not abort_signal.is_set():
         try:
-            tx_status = await sca.confirm_transaction(tx_sig=tx_sig, commitment='confirmed', last_valid_block_height=lvbh)
-            return tx_status
+            res = await sca.confirm_transaction(tx_sig=tx_sig, commitment='confirmed', last_valid_block_height=lvbh)
+            return res
         except TransactionExpiredBlockheightExceededError as e:
             abort_signal.set()
             logger.info(f"Block height exceeded: {e}")
@@ -205,9 +215,11 @@ async def confirm_transaction(sca, tx_sig, lvbh, abort_signal):
 async def check_transaction_status(sca, tx_sig, abort_signal):
     while not abort_signal.is_set():
         try:
-            tx_status = await sca.get_signature_statuses([tx_sig], search_transaction_history=False)
-            if tx_status.value[0]:
-                return tx_status
+            res = await sca.get_signature_statuses([tx_sig], search_transaction_history=False)
+            if res.value[0]:
+                tx_status = json.loads(res.value[0].to_json())
+                if tx_status['confirmationStatus'] in ('confirmed','finalized'):
+                    return res
         except Exception as e:
             logger.error(f"Get signatures issue: {e}")
             return None
@@ -237,9 +249,8 @@ async def txsender(tx_object):
             res = task.result() ## * FIX case when rpc is not synced (add get_transction check) 
             if res:
                 tx_status = json.loads(res.value[0].to_json())
-                if tx_status['confirmationStatus'] in ('confirmed','finalized'):
-                    logger.info('Transaction sent!')
-                    return tx_status['status']
+                logger.info('Transaction sent!', tx_status)
+                return tx_status['status']
 
     except Exception as e:
         logger.error(f"An error occurred: {e}")

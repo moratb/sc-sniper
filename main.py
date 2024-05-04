@@ -20,9 +20,13 @@ async def messages_listening():
     @client.on(events.NewMessage(chats=[chat_id]))
     async def handle_message(event):
         message = event.message
-        msg = handler.read_messages(message)
-        parsed = handler.parse_messages(msg)
-        handler.write_to_db(parsed)
+        try:
+            msg = handler.read_messages(message)
+            parsed = handler.parse_messages(msg)
+            handler.write_to_db(parsed)
+        except Exception as e:
+            logger.info(f"Message reading issue: {e}")
+
 
     catch_up_task = asyncio.create_task(handler.catch_up_periodically())
 
@@ -67,13 +71,13 @@ if __name__ == "__main__":
         t2.start()
 
     elif mode == "oracle":
-        t3 = threading.Thread(target=oracle_scheduling_thread)
+        t3 = Process(target=oracle_scheduling_thread)
         t3.start()
     
     elif mode == 'full':
         t1 = threading.Thread(target=messages_listening_thread)
         t2 = Process(target=jobs_scheduling_thread)
-        t3 = threading.Thread(target=oracle_scheduling_thread)
+        t3 = Process(target=oracle_scheduling_thread)
         t1.start()
         t2.start()
         t3.start()
