@@ -81,7 +81,7 @@ class SCTelegramListener:
         mult = {'K': 1e3, 'M': 1e6, 'B': 1e9, 'T': 1e12}
         messages['mcap'] = messages['mcap'].str.strip('[$\*]')
         messages['mcap_num'] = messages['mcap'].str.extract('([0-9\.]+)').astype(float) * messages['mcap'].str.extract(
-            '([A-Z])').replace(mult).fillna(1)
+            '([A-Z])').replace(mult).fillna(1)  ##TODO remove downcasting
         messages['liq'] = messages['liq'].str.strip(r" \[.*\]")
         messages['liq_num'] = messages['liq'].str.extract('([0-9\.]+)').astype(float) * messages['liq'].str.extract(
             '([A-Z])').replace(mult).fillna(1)

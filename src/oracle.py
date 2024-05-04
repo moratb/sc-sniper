@@ -61,6 +61,7 @@ class SCOracle:
         return tracked_tokens[tracked_tokens['sell_tag']==True]
 
     def sell_tokens(self, tokens_for_sale):
+        ## TODO: in case token has scammed, need to omit selling
         if tokens_for_sale.empty:
             self.logger.warn('No tokens are ready to sell yet')
             return None

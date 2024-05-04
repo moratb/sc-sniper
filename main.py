@@ -62,6 +62,7 @@ def oracle_scheduling_thread():
 
 
 if __name__ == "__main__":
+    t.sleep(5)
     mode = sys.argv[1]
 
     if mode == "ls":
