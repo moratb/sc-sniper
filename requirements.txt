@@ -1,0 +1,9 @@
+solders
+solana
+python-dotenv
+ta
+xgboost
+telethon
+tabulate
+APScheduler
+SQLAlchemy

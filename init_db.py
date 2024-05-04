@@ -1,5 +1,4 @@
 import sys
-sys.path.insert(1, './')
 from utils.common import *
 
 # Connect to a database (or create one if it doesn't exist)
