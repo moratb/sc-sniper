@@ -92,7 +92,7 @@ def getSPLtokens(wallet):
     splt_df['decimals'] = splt_df['account'].apply(lambda x: x['data']['parsed']['info']['tokenAmount']['decimals'])
     splt_df['amount'] = splt_df['account'].apply(lambda x: x['data']['parsed']['info']['tokenAmount']['amount'])
     splt_df['amount_int'] = splt_df['account'].apply(lambda x: x['data']['parsed']['info']['tokenAmount']['uiAmount'])
-    return splt_df
+    return splt_df.loc[splt_df['amount_int']>0]
 
 
 @retry(max_attempts=10, retry_delay=2)

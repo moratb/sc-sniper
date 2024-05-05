@@ -61,7 +61,7 @@ def core_task(token, launch_time):
             SOL_AMOUNT = USD_AMOUNT / cur_price[SOL_ca]['price']  ## TODO: Maybe just use solana based pricing
             result, txid = tx_procedure(wallet=wallet, asset_in=SOL_ca, asset_out=token,
                                         amount=SOL_AMOUNT, mode='buy', fee=PRIORITY_FEE)
-            logger.info(f"Result: {result} {txid}")  ## TODO: print other error types too. e.g. slippage tollerance (SHOULD BE DONE)
+            logger.info(f"Result: {result} {txid}")
             if result == {'Ok': None}:
                 logger.info(f"Success BUY {token} {txid}")
                 buy_price, sol_spent = check_tx_price_amount(txid)
