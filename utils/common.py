@@ -10,7 +10,8 @@ import os
 from dotenv import load_dotenv
 load_dotenv()
 API_KEY = os.getenv('bi_api_key')
-
+tg_token = os.getenv('tg_bot_token')
+tg_chat_id = os.getenv('tg_group_id')
 
 class SQLiteDB:
     def __init__(self, database):
@@ -74,3 +75,15 @@ def check_multi_price(token_list):
     price_data = {token:{'price':data['value'],'liquidity':data['liquidity']} 
                   for token,data in response.json()['data'].items()}
     return price_data
+
+
+def send_tg_message(token, buy_price, sol_spent):
+    url = f"https://api.telegram.org/bot{tg_token}/sendMessage"
+    text = f"bought {token}. Price:{buy_price}, Sol:{sol_spent}"
+    params = {"chat_id": tg_chat_id, "text": text}
+    try:
+        response = requests.post(url, params)
+        response.raise_for_status()  # Raise exception for 4xx and 5xx status codes
+        print("Message sent successfully!")
+    except Exception as e:
+        print("An unexpected error occurred:", e)

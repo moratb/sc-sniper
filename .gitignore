@@ -1,5 +1,6 @@
 .env
 scbot.conf
+gservice_creds.json
 helpscripts.sh
 thread_async_test.py
 /dbs/

@@ -65,8 +65,9 @@ def core_task(token, launch_time):
             if result == {'Ok': None}:
                 logger.info(f"Success BUY {token} {txid}")
                 buy_price, sol_spent = check_tx_price_amount(txid)
-                ## PART 6 WRITE TO DB
+                ## PART 6 WRITE TO DB and NOTIFY
                 buy_write(token, buy_price, sol_spent)
+                send_tg_message(token, buy_price, sol_spent)
                 break
             else:
                 continue

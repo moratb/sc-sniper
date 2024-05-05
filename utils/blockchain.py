@@ -58,8 +58,13 @@ def check_tx_price_amount(tx):
     i = ak.index(str(wallet.pubkey()))
     presol = tx_json['meta']['preBalances'][i]
     postsol = tx_json['meta']['postBalances'][i]
-    fee = tx_json['meta']['fee']
-    sol_change = (postsol - (presol - fee)) / 10**9
+    tx_fee = tx_json['meta']['fee']
+    account_creation_fee = 2039280 # 0.00203928 * 10**9
+    ## TODO: to include fees just do  (postsol - presol) / 10**9 
+    if postsol > presol:
+        sol_change = (postsol - (presol - tx_fee)) / 10**9
+    elif postsol <= presol:
+        sol_change = (postsol - (presol - tx_fee - account_creation_fee)) / 10**9
 
     ##TOKEN changes
     balances_pre = pd.DataFrame(tx_json['meta']['preTokenBalances'])
