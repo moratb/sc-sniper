@@ -49,22 +49,18 @@ def getDecimals(token):
 
 
 @retry(max_attempts=5, retry_delay=2)
-def check_tx_price_amount(tx):
+def check_tx_price_amount(tx, token):
     tx_data = checkTransaction(tx)
     tx_json = json.loads(tx_data.to_json())['result']
 
     ##SOL change
-    ak = tx_json['transaction']['message']['accountKeys']
-    i = ak.index(str(wallet.pubkey()))
-    presol = tx_json['meta']['preBalances'][i]
-    postsol = tx_json['meta']['postBalances'][i]
-    tx_fee = tx_json['meta']['fee']
-    account_creation_fee = 2039280 # 0.00203928 * 10**9
+    #ak = tx_json['transaction']['message']['accountKeys']
+    #i = ak.index(str(wallet.pubkey()))
+    #presol = tx_json['meta']['preBalances'][i]
+    #postsol = tx_json['meta']['postBalances'][i]
+    #tx_fee = tx_json['meta']['fee']
+    #account_creation_fee = 2039280 # 0.00203928 * 10**9
     ## TODO: to include fees just do  (postsol - presol) / 10**9 
-    if postsol > presol:
-        sol_change = (postsol - (presol - tx_fee)) / 10**9
-    elif postsol <= presol:
-        sol_change = (postsol - (presol - tx_fee - account_creation_fee)) / 10**9
 
     ##TOKEN changes
     balances_pre = pd.DataFrame(tx_json['meta']['preTokenBalances'])
@@ -76,8 +72,9 @@ def check_tx_price_amount(tx):
             on=['accountIndex','mint','owner'],
             suffixes=['_pre','_post'],how='outer').fillna(0)
     comb['change'] = comb['uiAmount_post'] - comb['uiAmount_pre']
-    comb[(comb['owner']==str(wallet.pubkey())) & (comb['change']>0)]['change']
-    out_amount = comb[(comb['owner']==str(wallet.pubkey())) & (np.abs(comb['change'])>0)]['change'].iloc[0]
+    wchanges = comb.loc[(comb['owner']==str(wallet.pubkey())) & (np.abs(comb['change'])>0)]
+    sol_change = wchanges[wchanges['mint']==SOL_ca]['change'].iloc[0]
+    out_amount = wchanges[wchanges['mint']==token]['change'].iloc[0]
     
     ## get approx usd price
     cur_price = check_multi_price([SOL_ca])
@@ -127,7 +124,7 @@ def get_tx(wallet, quote, fee_microlaports):
     json_data = {
         'quoteResponse': quote,
         'userPublicKey': str(wallet.pubkey()),
-        'wrapAndUnwrapSol': True,
+        'wrapAndUnwrapSol': False,
         'dynamicComputeUnitLimit': True,
         'computeUnitPriceMicroLamports':fee_microlaports
     }
