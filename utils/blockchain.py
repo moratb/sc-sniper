@@ -125,6 +125,7 @@ def get_tx(wallet, quote, fee_microlaports):
         'quoteResponse': quote,
         'userPublicKey': str(wallet.pubkey()),
         'wrapAndUnwrapSol': False,
+        'useSharedAccounts': False,
         'dynamicComputeUnitLimit': True,
         'computeUnitPriceMicroLamports':fee_microlaports
     }
