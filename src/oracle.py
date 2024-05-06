@@ -72,7 +72,7 @@ class SCOracle:
             self.logger.info(f'Result: {result}')
             if result == {'Ok': None}:
                 self.logger.info(f"Success SELL! {row['address']} {txid}")
-                sell_price, sol_gain = check_tx_price_amount(txid)
+                sell_price, sol_gain = check_tx_price_amount(tx=txid, token=row['address'])
                 self.update_db_on_sell(row['address'], sell_price, sol_gain)
                 self.logger.info('DB updated with sell data!')
             return None
