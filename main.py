@@ -4,6 +4,7 @@ from src.oracle import SCOracle
 from src.scheduler import SCJobScheduler
 from src.listnerer import SCTelegramListener
 from utils.logger import create_logger
+from utils.common import *
 import asyncio
 from telethon.sync import events
 import threading
@@ -35,6 +36,7 @@ async def messages_listening():
 
 def messages_listening_thread():
     asyncio.run(messages_listening())
+    send_tg_message2()
 
 
 def jobs_scheduling_thread():

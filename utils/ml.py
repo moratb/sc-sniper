@@ -103,8 +103,9 @@ def prepare_for_ml(static_data, ochl_data):
 
 
 def make_predictions(final_df):
-    model_clf = pickle.load(open('./models/model_clf.sav', 'rb'))
-    model_regr = pickle.load(open('./models/model_regr.sav', 'rb'))
-    SCAM_PREDICTION = model_clf.predict(final_df.drop(columns='address').rename(columns={'mcap_num':'Mcap_num','liq_num':'Liq_num'}))[0]
-    X_PREDICTION = model_regr.predict(final_df.drop(columns='address').rename(columns={'mcap_num':'Mcap_num','liq_num':'Liq_num'}))[0]
+    model_clf = pickle.load(open('./models/model_clf2.sav', 'rb'))
+    model_regr = pickle.load(open('./models/model_regr2.sav', 'rb'))
+    #SCAM_PREDICTION = model_clf.predict(final_df.drop(columns='address').rename(columns={'mcap_num':'Mcap_num','liq_num':'Liq_num'}))[0]
+    SCAM_PREDICTION =  int((model_clf.predict_proba(final_df.drop(columns='address'))[:, 1] >= 0.61)[0])
+    X_PREDICTION = model_regr.predict(final_df.drop(columns='address'))[0]
     return SCAM_PREDICTION, X_PREDICTION

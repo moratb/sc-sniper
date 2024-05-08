@@ -107,7 +107,7 @@ class SCTelegramListener:
                                                                                                              'date'] + pd.to_timedelta(
             messages['new'])
         messages = messages.drop(columns=['messages', 's_mm', 's_ma', 's_fa', 's_s', 'mcap', 'liq', 'text', 'new'])
-        return messages
+        return messages.loc[messages['mcap_num']>1000] ## ignore those with less than 1k mcap
 
     def write_to_db(self, message):
         with SQLiteDB('dbs/calls.db') as conn:

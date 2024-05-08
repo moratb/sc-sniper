@@ -87,3 +87,15 @@ def send_tg_message(token, buy_price, sol_spent):
         print("Message sent successfully!")
     except Exception as e:
         print("An unexpected error occurred:", e)
+
+
+def send_tg_message2(): ## TODO: Combine the two into single func
+    url = f"https://api.telegram.org/bot{tg_token}/sendMessage"
+    text = "Tg listenter disconnected :( please restart."
+    params = {"chat_id": tg_chat_id, "text": text}
+    try:
+        response = requests.post(url, params)
+        response.raise_for_status()  # Raise exception for 4xx and 5xx status codes
+        print("Message sent successfully!")
+    except Exception as e:
+        print("An unexpected error occurred:", e)
