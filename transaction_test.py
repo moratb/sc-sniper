@@ -21,4 +21,4 @@ from utils.coretask import *
 #    else:
 #        continue
 
-#core_task('Ba8HV9bpsW7mKnUWEVodbSH5vEUUMgivDAy2SwrKTK5W', dt.datetime(2024,5,4,2,58, tzinfo=dt.timezone.utc))
+core_task('3Ums67fvFTAwyYneQJHBK4nFpyR8YhkEVXje1LWit7s8', dt.datetime(2024,5,8,20,30, tzinfo=dt.timezone.utc))
