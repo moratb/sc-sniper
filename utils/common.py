@@ -47,7 +47,7 @@ def retry(max_attempts=10, retry_delay=1):
     return decorator_retry
 
 
-@retry(max_attempts=10, retry_delay=1)
+@retry(max_attempts=30, retry_delay=2)
 def get_price_data(token, time_from, time_to):
     url = "https://public-api.birdeye.so/defi/ohlcv"
     headers = {"x-chain": "solana", "X-API-KEY": API_KEY}
@@ -63,7 +63,7 @@ def get_price_data(token, time_from, time_to):
     return prices_df
 
 
-@retry(max_attempts=10, retry_delay=1)
+@retry(max_attempts=30, retry_delay=2)
 def check_multi_price(token_list):
     url = "https://public-api.birdeye.so/defi/multi_price"
     headers = {"x-chain": "solana", "X-API-KEY": API_KEY}
