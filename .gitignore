@@ -9,3 +9,4 @@ thread_async_test.py
 /examples/new_all_calls.csv
 /examples
 .vscode
+.DS_Store

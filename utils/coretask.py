@@ -52,7 +52,7 @@ def core_task(token, launch_time):
     ## PART 4 - APPLY ML
     decision1, decision2 = make_predictions(final_df)
 
-    if (decision1==1) & (decision2>=3.7):
+    if (decision1==1) & (decision2>=3.6):
         decision_write(token, f"BUY! d1: {decision1}, d2: {decision2:.2f}")
         while True:
             logger.info(f'Attempt to BUY: {token}')
